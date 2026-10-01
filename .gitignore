@@ -79,3 +79,7 @@ crashlytics-build.properties
 CLAUDE.md
 CLAUDE.local.md
 /[Cc]laude[Dd]ocs/
+
+# Plastic SCM / Unity Version Control (no se usa; solo Git)
+.plastic/
+ignore.conf
