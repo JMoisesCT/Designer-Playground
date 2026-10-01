@@ -58,8 +58,8 @@ public class PlayerAnimator : MonoBehaviour
         _animator.SetBool(IsGroundedId, _movement.IsGrounded);
         _animator.SetBool(IsWallSlidingId, _movement.IsWallSliding);
 
-        // El sprite de pared mira hacia fuera de la pared; el resto mira hacia donde avanza.
-        int facing = _movement.IsWallSliding ? -_movement.WallDirection : _movement.FacingDirection;
+        // En la pared se orienta hacia ella (el dibujo ya tiene la espalda contra la pared); el resto, hacia donde avanza.
+        int facing = _movement.IsWallSliding ? _movement.WallDirection : _movement.FacingDirection;
         if (_spriteRenderer != null) _spriteRenderer.flipX = facing < 0;
     }
 
