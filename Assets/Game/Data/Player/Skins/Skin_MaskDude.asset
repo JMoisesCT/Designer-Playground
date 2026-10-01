@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 022e17137f2981947b2637cebc61a350, type: 3}
+  m_Name: Skin_MaskDude
+  m_EditorClassIdentifier: Game.Runtime::CharacterSkinSO
+  _displayName: Mask Dude
+  _animatorController: {fileID: 22100000, guid: 12a16a11e1e47c440a11b25fa108126a, type: 2}
+  _previewSprite: {fileID: -6367560908665664636, guid: 3750f45c844123341b9a777a96cb1eca, type: 3}

@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90831b760d05554449d382e2773cb3cd, type: 3}
+  m_Name: PlayerMovementConfig_Floaty
+  m_EditorClassIdentifier: Game.Runtime::PlayerMovementConfigSO
+  _maxRunSpeed: 7
+  _groundAccelerationTime: 0.18
+  _groundDecelerationTime: 0.22
+  _airAccelerationTime: 0.3
+  _airDecelerationTime: 0.5
+  _jumpHeight: 3.6
+  _timeToApex: 0.55
+  _fallGravityMultiplier: 1
+  _jumpCutGravityMultiplier: 2
+  _maxFallSpeed: 9
+  _coyoteTime: 0.15
+  _jumpBufferTime: 0.15
+  _airJumps: 1
+  _airJumpHeight: 2.8
+  _wallMovementEnabled: 1
+  _wallSlideMaxSpeed: 2
+  _wallJumpHeight: 3
+  _wallJumpPushSpeed: 7
+  _wallJumpControlLockTime: 0.2
+  _wallCoyoteTime: 0.12
+  _wallRefreshesAirJumps: 1
