@@ -2,7 +2,7 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!78 &1
 TagManager:
-  serializedVersion: 2
+  serializedVersion: 3
   tags: []
   layers:
   - Default
@@ -11,12 +11,12 @@ TagManager:
   - 
   - Water
   - UI
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - Ground
+  - OneWayPlatform
+  - Player
+  - Hazard
+  - Collectible
+  - Interactable
   - 
   - 
   - 
@@ -38,6 +38,29 @@ TagManager:
   - 
   - 
   m_SortingLayers:
+  - name: Background
+    uniqueID: 3137079997
+    locked: 0
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Terrain
+    uniqueID: 2818509998
+    locked: 0
+  - name: Traps
+    uniqueID: 19106947
+    locked: 0
+  - name: Items
+    uniqueID: 3761649711
+    locked: 0
+  - name: Player
+    uniqueID: 477166624
+    locked: 0
+  - name: Foreground
+    uniqueID: 3647682272
+    locked: 0
+  - name: FX
+    uniqueID: 1825785779
+    locked: 0
+  m_RenderingLayers:
+  - Default
