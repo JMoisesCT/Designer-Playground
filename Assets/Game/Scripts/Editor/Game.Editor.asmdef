@@ -3,6 +3,7 @@
     "rootNamespace": "",
     "references": [
         "Game.Runtime",
+        "Unity.2D.Tilemap.Editor",
         "Unity.InputSystem",
         "Unity.RenderPipelines.Core.Runtime",
         "Unity.RenderPipelines.Universal.Runtime",
