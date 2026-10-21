@@ -1,41 +1,49 @@
 # Designer Playground
 
-Kit para hacer niveles de plataformas 2D en Unity **sin programar**: pintas el terreno, colocas el personaje, ajustas valores en el Inspector y le das a Play.
+Kit para hacer niveles de videojuegos 2D en Unity **sin programar**: pintas el nivel, arrastras prefabs, ajustas valores en el Inspector y le das a Play.
 
 - Unity **6000.3** (Unity 6.3). Abre la carpeta del proyecto desde Unity Hub.
-- Todo lo del kit está en el menú superior **Designer Playground**.
 - Gráficos: Pixel Adventure 1. Sonidos: Kenney.
+
+| Juego | Carpeta | Menú |
+|---|---|---|
+| Plataformas | `Assets/Platformer/` | **Platformer** |
+| Top-down | *(próximamente)* | |
 
 ---
 
-## Cómo armar un nivel en 5 minutos
+# Plataformas
+
+Todo lo del juego de plataformas está en `Assets/Platformer/`:
+
+| Carpeta | Qué hay |
+|---|---|
+| `Scenes/` | `Nivel_01` (nivel de ejemplo) y tus niveles |
+| `Prefabs/` | `Jugador`, `Enemigo`, `Sierra`: se arrastran a la escena |
+| `Art/Palettes/` | La paleta **Platformer** para pintar el nivel |
+| `Art/Tiles/` | Los tiles de la paleta |
+
+## Cómo armar un nivel
 
 ### 1. Crea el nivel
 
-Menú **Designer Playground → Nivel → Crear nivel nuevo** y ponle nombre (por ejemplo `Nivel_Ana_01`). Se guarda en `Assets/Game/Scenes/Levels/`.
+Menú **Platformer → Crear nivel nuevo** y ponle nombre (por ejemplo `Nivel_Ana`). Se guarda en `Assets/Platformer/Scenes/`.
 
-El nivel ya trae todo lo necesario para jugar:
+El nivel ya trae un suelo, el **Jugador**, la cámara y la luz: puedes darle a Play ya mismo.
 
-| En la jerarquía | Para qué sirve |
-|---|---|
-| `Grid → Terreno` | Suelo y paredes. Se choca con él y se pueden escalar las paredes. |
-| `Grid → Plataformas (atravesables)` | Plataformas que se atraviesan saltando desde abajo. |
-| `Grid → Decoración (sin colisión)` | Dibujos de fondo. No se choca con ellos. |
-| `Player` | El personaje. La cámara (`Main Camera`) va dentro y lo sigue. |
-| `Global Light 2D` | La luz de la escena. No la borres o todo se verá negro. |
+> ¿Quieres ver un ejemplo completo? Abre `Assets/Platformer/Scenes/Nivel_01`.
 
-También trae un suelo y una plataforma de ejemplo: puedes darle a Play ya mismo.
+### 2. Pinta el nivel
 
-### 2. Pinta el terreno
+Al crear el nivel se abre la ventana **Tile Palette** con la paleta **Platformer**. Si la cierras, está en *Window → 2D → Tile Palette*.
 
-Al crear el nivel se abre la ventana **Tile Palette** con la paleta **Terreno**. Si la cierras, está en *Window → 2D → Tile Palette*.
-
-1. Arriba, en el desplegable **Active Tilemap**, elige dónde pintas: `Terreno`, `Plataformas (atravesables)` o `Decoración (sin colisión)`.
+1. Comprueba que arriba, en **Active Tilemap**, pone `Terreno`.
 2. Haz clic en un tile de la paleta y pinta en la vista **Scene**.
 
-La paleta tiene:
-- **Bloque de pasto 3×3**: esquinas, bordes y centro. Rellena con el centro y luego pon los bordes y las esquinas.
-- **Madera** (izquierda, centro y derecha): para las plataformas atravesables. Pinta la madera solo en `Plataformas (atravesables)`.
+| Tile | Qué hace |
+|---|---|
+| **Pasto**, **Tierra**, **Caramelo** | Suelo y paredes. Los bordes y las esquinas se ponen **solos**: pinta bloques de cualquier forma. |
+| **Pinchos** | Peligro: el jugador muere al tocarlos. Para ponerlos en el techo o en una pared, gíralos con `[` y `]` antes de pintar. |
 
 Herramientas (con el ratón sobre la vista Scene):
 
@@ -45,93 +53,70 @@ Herramientas (con el ratón sobre la vista Scene):
 | `U` | Rectángulo: rellena un área de golpe |
 | `D` | Borrador (o `Shift` + clic con el pincel) |
 | `I` | Cuentagotas: copia un tile de la escena |
+| `[` `]` | Girar el tile antes de pintarlo |
 | `Ctrl + Z` | Deshacer |
 
 > 1 tile = 1 cuadro de la grilla. La pantalla muestra unos **24 × 13** tiles.
 
-### 3. Comprueba que los saltos se pueden hacer
+### 3. Pon enemigos y sierras
 
-Selecciona el **Player** en la jerarquía. En la vista Scene se dibujan los saltos:
-- **Amarillo**: salto normal. **Cian**: doble salto.
-- El texto indica la altura máxima y el hueco más largo que se puede saltar, en tiles.
-- Si no ves nada, activa el botón **Gizmos** de la barra superior de la vista Scene.
+Arrastra desde `Assets/Platformer/Prefabs/` a la vista Scene:
 
-Con el ajuste por defecto (*Preciso*): salto de unos **3 tiles** de alto y **6** de largo; con doble salto, **5** de alto y **9** de largo. Si un hueco es más largo que eso, no se puede pasar.
+| Prefab | Qué hace |
+|---|---|
+| **Enemigo** | Camina de ida y vuelta. Si lo tocas, mueres; si le **saltas encima**, lo eliminas y rebotas. |
+| **Sierra** | Va de ida y vuelta. No se puede pisar: mata siempre. |
 
-### 4. Juega
+Su recorrido es la **línea amarilla**: arrastra el **círculo amarillo** para cambiar adónde va (en horizontal, vertical o diagonal). Para que una sierra no se mueva, deja el círculo encima de ella.
 
-Pulsa **Play** (arriba, en el centro). Vuelve a pulsarlo para salir.
+Pon el **Enemigo** con los pies sobre el suelo y su línea encima de una plataforma: camina por la línea aunque no haya suelo debajo.
+
+En el Inspector puedes cambiar:
+- **Speed**: velocidad. **Wait Time**: pausa en cada extremo.
+- **Can Be Stomped** (solo Enemigo): desactívalo para un enemigo que no se pueda pisar.
+
+### 4. Ajusta el personaje
+
+Selecciona el **Jugador** y cambia en el Inspector (componente *Player Controller*):
+
+| Valor | Efecto |
+|---|---|
+| **Move Speed** | Velocidad al correr |
+| **Jump Force** | Impulso del salto: más alto = salta más alto y más lejos |
+| **Gravity** | Más alto = cae más rápido y el salto es más bajo |
+
+Con el Jugador seleccionado, la vista Scene dibuja en **amarillo** el salto más largo posible y su altura y distancia en tiles. Si un hueco es más largo que el arco, no se puede pasar. (Si no ves nada, activa el botón **Gizmos** de la vista Scene.)
+
+La **línea roja** horizontal es la altura de caída: si el jugador cae por debajo, muere. Cámbiala en *Player Health → Death Height*.
+
+### 5. Juega
+
+Pulsa **Play** (arriba, en el centro). Vuelve a pulsarlo para salir. Al morir, el nivel vuelve a empezar.
 
 | Acción | Teclado | Mando |
 |---|---|---|
 | Moverse | `A` `D` o flechas | Stick izquierdo o cruceta |
 | Saltar (mantén para saltar más alto) | `Espacio` | Botón de abajo (A / ✕) |
-| Doble salto | `Espacio` en el aire | Botón de abajo |
-| Saltar desde una pared | Empuja contra la pared y pulsa `Espacio` | Igual |
 
 > ⚠️ Lo que cambies **durante** el Play se pierde al salir. Sal de Play antes de seguir editando.
 
-### 5. Guarda
+### 6. Guarda
 
 `Ctrl + S`. Guarda a menudo.
-
----
-
-## Personaliza el personaje
-
-Selecciona el **Player** y mira el Inspector:
-
-- **Personaje** (componente *Player Animator → Skin*): elige Ninja Frog, Mask Dude, Pink Man o Virtual Guy en el desplegable.
-- **Cómo se mueve** (*Player Movement → Config*): arrastra otro preset desde `Assets/Game/Data/Player/`:
-  - `Preciso`: rápido y controlable (el de por defecto).
-  - `Floaty`: salta más alto y flota más.
-  - `Pesado`: rápido y cae con fuerza.
-- **Vida** (*Player Health → Max Health*): golpes que aguanta.
-
-Para crear tu propio ajuste, **duplica** un preset (`Ctrl + D`), cámbiale el nombre y edita sus valores. Así no cambias el de los demás. Pasa el ratón por encima de cada campo para ver qué hace.
-
----
-
-## Haz que pasen cosas sin programar
-
-Ejemplo: *"cuando el jugador llegue aquí, aparece un objeto"*.
-
-1. Crea un objeto vacío (*clic derecho en la jerarquía → Create Empty*) y llámalo `Zona`.
-2. *Add Component → Trigger Zone*. Aparece un rectángulo verde: ajusta su tamaño con el *Box Collider 2D*.
-3. En **On Enter** pulsa `+`, arrastra el objeto que quieres que aparezca y elige `GameObject → SetActive` con la casilla marcada.
-4. Desactiva ese objeto al empezar (casilla junto a su nombre en el Inspector).
-
-**Trigger Zone** también puede lanzar un **evento** (*Event On Enter*). Los eventos están en `Assets/Game/Events/`. Cualquier objeto con un **Event Listener** (*Void Event Listener*, *Bool Event Listener*…) puede reaccionar a ese evento, esté donde esté en la escena.
-
----
 
 ## Problemas frecuentes
 
 | Pasa esto | Solución |
 |---|---|
-| Todo se ve negro | Menú **Designer Playground → Escena → Luces 2D: iluminar todas las Sorting Layers**. |
-| El jugador atraviesa el suelo | Lo pintaste en `Decoración (sin colisión)`. Bórralo y píntalo en `Terreno`. |
-| No puedo subir a una plataforma desde abajo | Está pintada en `Terreno`. Para atravesarla, píntala en `Plataformas (atravesables)`. |
-| La paleta no aparece | *Window → 2D → Tile Palette* y elige **Terreno** en el desplegable. Si no existe: **Designer Playground → Nivel → Crear o actualizar paleta de terreno**. |
-| Los sprites se ven borrosos | **Designer Playground → Setup → Ejecutar setup completo (Fase 0)**. |
-| No pinta donde hago clic | Comprueba el **Active Tilemap** de la Tile Palette y que estás en la vista **Scene** (no Game). |
-
----
-
-## Qué viene después
-
-El kit está en construcción. Pronto llegarán (y esta guía se irá actualizando):
-- Inicio y meta del nivel, checkpoints y reaparecer al morir.
-- Frutas y cajas rompibles con contador.
-- Trampas (pinchos, sierras, fuego…) y plataformas móviles listas para arrastrar.
-- Cámara por zonas, sonido, HUD y menú de pausa.
-
----
+| Todo se ve negro | No borres el objeto `Global Light 2D`. Si lo borraste, crea un nivel nuevo. |
+| No pinta donde hago clic | Comprueba que **Active Tilemap** es `Terreno` y que estás en la vista **Scene** (no Game). |
+| La paleta no aparece | *Window → 2D → Tile Palette* y elige **Platformer** en el desplegable. |
+| La cámara no sigue al jugador | El jugador debe tener el tag **Player** (lo trae el prefab). |
+| Un enemigo flota o se hunde | Muévelo para que sus pies toquen el suelo; su línea amarilla es por donde camina. |
 
 ## Reglas del proyecto
 
-- Trabaja en **tu propia escena** de `Assets/Game/Scenes/Levels/`. No edites las escenas de `Sandbox/` ni las de otros compañeros.
+- Trabaja en **tu propia escena**. No edites `Nivel_01` ni las escenas de otros compañeros.
 - No modifiques nada de `Assets/ThirdParty/`.
-- Para cambiar un ajuste compartido (presets, eventos), duplícalo primero.
 
-*Para programadores: convenciones en [`CLAUDE.md`](CLAUDE.md) y plan por fases en [`ClaudeDocs/ROADMAP.md`](ClaudeDocs/ROADMAP.md).*
+*Para programadores: convenciones en [`CLAUDE.md`](CLAUDE.md). Los assets del kit se regeneran con **Platformer → Avanzado → Regenerar assets del kit**.*
