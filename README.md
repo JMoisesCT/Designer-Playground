@@ -14,5 +14,3 @@ Kits para crear niveles de videojuegos 2D en Unity **sin programar**: dibujas el
 
 - Trabaja en **tu propio nivel**. No edites los niveles de ejemplo (`Nivel_01`) ni los de tus compañeros.
 - No modifiques nada de `Assets/ThirdParty/`.
-
-*Para programadores: convenciones en [`CLAUDE.md`](CLAUDE.md) y plan en [`ClaudeDocs/ROADMAP.md`](ClaudeDocs/ROADMAP.md).*
