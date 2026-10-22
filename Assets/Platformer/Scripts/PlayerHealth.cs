@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.Tilemaps;
 
 namespace Platformer
@@ -70,13 +69,7 @@ namespace Platformer
         private IEnumerator RestartLevel()
         {
             yield return new WaitForSeconds(_restartDelay);
-            Scene scene = SceneManager.GetActiveScene();
-#if UNITY_EDITOR
-            // En el editor así funciona aunque la escena no esté en Build Settings.
-            UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(scene.path, new LoadSceneParameters(LoadSceneMode.Single));
-#else
-            SceneManager.LoadScene(scene.buildIndex);
-#endif
+            LevelLoader.Restart();
         }
 
         private static bool IsHazardAt(Tilemap tilemap, Vector2 point)

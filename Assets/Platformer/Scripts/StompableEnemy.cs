@@ -25,12 +25,14 @@ namespace Platformer
             if (player == null || player.IsDead) return;
 
             // Pisotón = el jugador cae y sus pies están por encima de la mitad del enemigo.
+            // "Acaba de rebotar" también vale: si pisa dos enemigos a la vez, el primero ya lo ha lanzado hacia arriba.
+            PlayerController controller = player.GetComponent<PlayerController>();
             bool falling = other.attachedRigidbody != null && other.attachedRigidbody.linearVelocity.y < 0f;
             bool fromAbove = other.bounds.min.y > _collider.bounds.center.y;
 
-            if (_canBeStomped && falling && fromAbove)
+            if (_canBeStomped && (falling || controller.JustBounced) && fromAbove)
             {
-                player.GetComponent<PlayerController>().Bounce(_bounceForce);
+                controller.Bounce(_bounceForce);
                 Defeat();
             }
             else

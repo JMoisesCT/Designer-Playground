@@ -2,7 +2,7 @@
 
 En este tutorial vas a crear un nivel de plataformas **sin escribir código**: dibujas el escenario, colocas enemigos y trampas, ajustas cómo salta el personaje y lo pruebas.
 
-Tiempo: unos 20 minutos.
+Tiempo: unos 30 minutos.
 
 ---
 
@@ -33,7 +33,8 @@ Abre el proyecto desde **Unity Hub**. Estas son las partes de la ventana que vas
 | Saltar | `Espacio` (mantén para saltar más alto) | Botón de abajo (A / ✕) |
 
 3. Prueba a saltar encima de un enemigo: desaparece y rebotas. Si lo tocas de lado, o tocas los pinchos o la sierra, mueres y el nivel vuelve a empezar.
-4. Pulsa **Play** otra vez para salir.
+4. Recoge las frutas (el contador está arriba a la izquierda), cruza el foso en la plataforma que se mueve, sube al acantilado con el trampolín y toca el trofeo para terminar el nivel.
+5. Pulsa **Play** otra vez para salir.
 
 > ⚠️ **Muy importante:** lo que cambies **mientras está en Play** se pierde al salir. Sal siempre de Play antes de editar.
 
@@ -52,7 +53,9 @@ Tu nivel ya trae lo básico. Puedes darle a Play ya mismo:
 |---|---|
 | `Grid → Terreno` | El dibujo del nivel: suelo, paredes y pinchos. |
 | `Jugador` | El personaje. |
+| `Meta` | El trofeo: al tocarlo se termina el nivel. Muévelo al final de tu recorrido. |
 | `Main Camera` | La cámara. Sigue al jugador sola. |
+| `Interfaz` | El contador de frutas y el mensaje de "¡Nivel completado!". |
 | `Global Light 2D` | La luz. **No la borres** o todo se verá negro. |
 
 ---
@@ -117,7 +120,45 @@ Los objetos listos para usar están en `Assets/Platformer/Prefabs/`. **Arrástra
 
 ---
 
-## 5. Ajusta cómo se mueve el personaje
+## 5. Plataformas móviles y trampolines
+
+También están en `Assets/Platformer/Prefabs/`:
+
+| Prefab | Qué hace |
+|---|---|
+| **PlataformaMovil** | Va y viene como el enemigo y **lleva al jugador encima**. Se atraviesa saltando desde abajo. |
+| **Trampolin** | Al caer encima, el jugador sale disparado hacia arriba. Úsalo para llegar a sitios altos. |
+
+**PlataformaMovil:** su recorrido se cambia igual que el del enemigo, arrastrando el **círculo amarillo**. Hacia los lados sirve para cruzar huecos; hacia arriba, como ascensor. *Speed* y *Wait Time* funcionan igual.
+
+**Trampolin:** ponlo sobre el suelo. Al seleccionarlo, una **línea verde** muestra hasta dónde sube el jugador. Cambia la altura con **Bounce Force**.
+
+**✏️ Prueba:** haz un hueco demasiado largo para saltarlo y crúzalo con una plataforma móvil. Después, pon una plataforma tan alta que solo se alcance con un trampolín.
+
+---
+
+## 6. Frutas y meta
+
+| Prefab | Qué hace |
+|---|---|
+| **Fruta** | Se recoge al tocarla. El contador de arriba muestra cuántas llevas y cuántas hay en el nivel. |
+| **Meta** | El trofeo del final. Tu nivel ya trae una; si la borras, arrastra este prefab. |
+
+**Fruta:** en el Inspector, **Kind** elige el dibujo: manzana, plátano, cerezas, kiwi, melón, naranja, piña o fresa. Coloca frutas en sitios difíciles para premiar al que se arriesga. Si el nivel no tiene frutas, el contador no aparece.
+
+**Meta:** pon los pies del trofeo sobre el suelo. En el Inspector:
+
+| Valor | Qué cambia |
+|---|---|
+| **Next Level** | Arrastra aquí la escena del siguiente nivel (desde `Assets/Platformer/Scenes/`). Si lo dejas vacío, el nivel vuelve a empezar. |
+| **Message** | El texto que sale al llegar. |
+| **Delay** | Segundos que se ve el mensaje antes de cambiar de nivel. |
+
+**✏️ Prueba:** crea un segundo nivel y arrástralo a *Next Level* de la meta del primero. ¡Ya tienes un juego con dos niveles!
+
+---
+
+## 7. Ajusta cómo se mueve el personaje
 
 Selecciona **Jugador** en la Hierarchy. En el Inspector, en *Player Controller*:
 
@@ -135,7 +176,7 @@ La **línea roja** horizontal es la altura de caída: si el jugador cae por deba
 
 ---
 
-## 6. Guarda
+## 8. Guarda
 
 `Ctrl + S`. Guarda a menudo.
 
@@ -144,10 +185,12 @@ La **línea roja** horizontal es la altura de caída: si el jugador cae por deba
 ## Retos
 
 1. **El foso:** un hueco tan largo que solo se pueda cruzar saltando encima de un enemigo.
-2. **La torre:** un nivel vertical donde hay que subir de plataforma en plataforma.
+2. **La torre:** un nivel vertical donde hay que subir de plataforma en plataforma (prueba con ascensores: plataformas móviles que suben y bajan).
 3. **El pasillo de sierras:** tres sierras subiendo y bajando con distinta velocidad (*Speed*) y pausa (*Wait Time*).
 4. **Luna:** baja la gravedad y diseña un nivel con huecos enormes.
-5. **Intercambio:** juega el nivel de un compañero y dile qué parte fue la más difícil.
+5. **La fruta imposible:** esconde una fruta en un sitio al que solo se llegue con un trampolín y un salto perfecto.
+6. **La saga:** tres niveles encadenados con *Next Level*, cada uno más difícil que el anterior.
+7. **Intercambio:** juega el nivel de un compañero y dile qué parte fue la más difícil.
 
 ---
 
@@ -161,4 +204,7 @@ La **línea roja** horizontal es la altura de caída: si el jugador cae por deba
 | La cámara no sigue al jugador | Usa el prefab **Jugador** (trae el tag *Player*). |
 | El enemigo flota o se hunde | Muévelo para que sus pies toquen el suelo. |
 | Los pinchos no matan | Píntalos con el tile **Pinchos** de la paleta en **Terreno**. |
+| No veo el contador de frutas | Arrastra el prefab **Interfaz** a la escena (solo uno). Sin frutas en el nivel, no aparece. |
+| La meta no lleva al siguiente nivel | Arrastra la escena a *Next Level*. Para el juego exportado, añade todos los niveles en *File → Build Profiles → Scene List*. |
+| El trampolín no me lanza | Tienes que caerle encima; si llegas de lado, choca como una pared. |
 | Cambié algo y se perdió | Lo cambiaste en Play. Sal de Play y vuelve a cambiarlo. |

@@ -36,11 +36,17 @@ namespace Platformer
             _body.bodyType = RigidbodyType2D.Kinematic;
         }
 
+        private void OnDisable()
+        {
+            _body.linearVelocity = Vector2.zero;
+        }
+
         private void FixedUpdate()
         {
             if (_waitTimer > 0f)
             {
                 _waitTimer -= Time.fixedDeltaTime;
+                _body.linearVelocity = Vector2.zero;
                 return;
             }
 
@@ -50,7 +56,9 @@ namespace Platformer
             if (_flipSprite && _sprite != null && !Mathf.Approximately(target.x, _body.position.x))
                 _sprite.flipX = target.x < _body.position.x;
 
-            _body.MovePosition(next);
+            // Se mueve con velocidad (no con MovePosition) para que el jugador sepa a qué velocidad va
+            // la plataforma móvil sobre la que está.
+            _body.linearVelocity = (next - _body.position) / Time.fixedDeltaTime;
 
             if (next == target)
             {

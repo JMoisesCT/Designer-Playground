@@ -11,6 +11,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.Tilemaps;
+using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
 namespace Platformer.Editor
@@ -38,6 +39,11 @@ namespace Platformer.Editor
         private const string PlayerPrefabPath = PrefabsFolder + "/Jugador.prefab";
         private const string EnemyPrefabPath = PrefabsFolder + "/Enemigo.prefab";
         private const string SawPrefabPath = PrefabsFolder + "/Sierra.prefab";
+        private const string GoalPrefabPath = PrefabsFolder + "/Meta.prefab";
+        private const string FruitPrefabPath = PrefabsFolder + "/Fruta.prefab";
+        private const string PlatformPrefabPath = PrefabsFolder + "/PlataformaMovil.prefab";
+        private const string TrampolinePrefabPath = PrefabsFolder + "/Trampolin.prefab";
+        private const string HudPrefabPath = PrefabsFolder + "/Interfaz.prefab";
 
         private const string TerrainTilemapName = "Terreno";
 
@@ -101,6 +107,28 @@ namespace Platformer.Editor
 
             BuildController("Sierra",
                 BuildClip("Sierra", "On", $"{Art}/Traps/Saw/On (38x38).png", true));
+
+            string end = Art + "/Items/Checkpoints/End";
+            BuildController("Meta",
+                BuildClip("Meta", "Idle", $"{end}/End (Idle).png", false),
+                BuildClip("Meta", "Pressed", $"{end}/End (Pressed) (64x64).png", false));
+
+            // Un estado por fruta (mismo nombre que Fruit.Kind) y "Collected" al recogerla.
+            var fruitClips = new List<AnimationClip>();
+            foreach (Fruit.Kind kind in Enum.GetValues(typeof(Fruit.Kind)))
+            {
+                fruitClips.Add(BuildClip("Fruta", kind.ToString(), FruitSheet(kind), true));
+            }
+            fruitClips.Add(BuildClip("Fruta", "Collected", $"{Art}/Items/Fruits/Collected.png", false));
+            BuildController("Fruta", fruitClips.ToArray());
+
+            BuildController("PlataformaMovil",
+                BuildClip("PlataformaMovil", "On", $"{Art}/Traps/Platforms/Brown On (32x8).png", true));
+
+            string trampoline = Art + "/Traps/Trampoline";
+            BuildController("Trampolin",
+                BuildClip("Trampolin", "Idle", $"{trampoline}/Idle.png", false),
+                BuildClip("Trampolin", "Jump", $"{trampoline}/Jump (28x28).png", false));
 
             AssetDatabase.SaveAssets();
         }
@@ -258,6 +286,11 @@ namespace Platformer.Editor
                 BuildPlayerPrefab();
                 BuildEnemyPrefab();
                 BuildSawPrefab();
+                BuildGoalPrefab();
+                BuildFruitPrefab();
+                BuildPlatformPrefab();
+                BuildTrampolinePrefab();
+                BuildHudPrefab();
             }
             finally
             {
@@ -349,6 +382,149 @@ namespace Platformer.Editor
             SavePrefab(root, SawPrefabPath);
         }
 
+        // Trofeo de 4×4 tiles: los pies del trofeo quedan 2 tiles por debajo del centro.
+        private static void BuildGoalPrefab()
+        {
+            var root = new GameObject("Meta");
+            AddSprite(root, "Meta", "Idle", "Traps", 0);
+            Animator animator = AddAnimator(root, "Meta");
+
+            var box = root.AddComponent<BoxCollider2D>();
+            box.isTrigger = true;
+            box.size = new Vector2(2.4f, 2.6f);
+            box.offset = new Vector2(0f, -0.7f);
+
+            var goal = root.AddComponent<Goal>();
+            SetFields(goal, ("_animator", animator));
+            SavePrefab(root, GoalPrefabPath);
+        }
+
+        private static void BuildFruitPrefab()
+        {
+            var root = new GameObject("Fruta");
+            SpriteRenderer sprite = AddSprite(root, "Fruta", nameof(Fruit.Kind.Apple), "Traps", 5);
+            Animator animator = AddAnimator(root, "Fruta");
+
+            var circle = root.AddComponent<CircleCollider2D>();
+            circle.isTrigger = true;
+            circle.radius = 0.45f;
+            circle.offset = new Vector2(0f, 0.1f);
+
+            var fruit = root.AddComponent<Fruit>();
+            SetFields(fruit, ("_collider", circle), ("_animator", animator), ("_sprite", sprite));
+
+            var serializedFruit = new SerializedObject(fruit);
+            SerializedProperty sprites = serializedFruit.FindProperty("_sprites");
+            var kinds = (Fruit.Kind[])Enum.GetValues(typeof(Fruit.Kind));
+            sprites.arraySize = kinds.Length;
+            for (int i = 0; i < kinds.Length; i++)
+            {
+                sprites.GetArrayElementAtIndex(i).objectReferenceValue = LoadFrames(FruitSheet(kinds[i]))[0];
+            }
+            serializedFruit.ApplyModifiedPropertiesWithoutUndo();
+
+            SavePrefab(root, FruitPrefabPath);
+        }
+
+        // Plataforma de 2 tiles de ancho que se atraviesa desde abajo y lleva al jugador encima.
+        private static void BuildPlatformPrefab()
+        {
+            var root = new GameObject("PlataformaMovil") { layer = LayerMask.NameToLayer("Ground") };
+            AddSprite(root, "PlataformaMovil", "On", "Traps", 0);
+            AddAnimator(root, "PlataformaMovil");
+            Rigidbody2D body = AddKinematicBody(root);
+
+            // El dibujo mide 32×7 px visibles: la superficie queda 3 px por encima del centro.
+            var box = root.AddComponent<BoxCollider2D>();
+            box.size = new Vector2(2f, 0.4375f);
+            box.offset = new Vector2(0f, -0.03125f);
+            box.usedByEffector = true;
+            root.AddComponent<PlatformEffector2D>().useOneWay = true;
+
+            var mover = root.AddComponent<PatrolMover>();
+            SetFields(mover, ("_body", body));
+            var serializedMover = new SerializedObject(mover);
+            serializedMover.FindProperty("_waitTime").floatValue = 0.5f;
+            serializedMover.FindProperty("_flipSprite").boolValue = false;
+            serializedMover.ApplyModifiedPropertiesWithoutUndo();
+
+            SavePrefab(root, PlatformPrefabPath);
+        }
+
+        // Trampolín sólido (se puede chocar con él de lado); el dibujo visible ocupa los 11 px de abajo.
+        private static void BuildTrampolinePrefab()
+        {
+            var root = new GameObject("Trampolin") { layer = LayerMask.NameToLayer("Ground") };
+            AddSprite(root, "Trampolin", "Idle", "Traps", 0);
+            Animator animator = AddAnimator(root, "Trampolin");
+
+            var box = root.AddComponent<BoxCollider2D>();
+            box.size = new Vector2(1.375f, 0.625f);
+            box.offset = new Vector2(0f, -0.55f);
+
+            var trampoline = root.AddComponent<Trampoline>();
+            SetFields(trampoline, ("_collider", box), ("_animator", animator));
+            SavePrefab(root, TrampolinePrefabPath);
+        }
+
+        // Canvas con el contador de frutas y el mensaje central. Medidas en píxeles del juego (384×216).
+        private static void BuildHudPrefab()
+        {
+            var root = new GameObject("Interfaz");
+            var canvas = root.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            var scaler = root.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(384f, 216f);
+            scaler.matchWidthOrHeight = 0.5f;
+
+            var counter = new GameObject("Frutas", typeof(RectTransform));
+            var counterRect = (RectTransform)counter.transform;
+            counterRect.SetParent(root.transform, false);
+            counterRect.anchorMin = counterRect.anchorMax = counterRect.pivot = new Vector2(0f, 1f);
+            counterRect.anchoredPosition = new Vector2(0f, 0f);
+            counterRect.sizeDelta = new Vector2(80f, 32f);
+
+            // La fruta solo ocupa el centro de su dibujo de 32×32 px.
+            var icon = new GameObject("Icono", typeof(RectTransform)).AddComponent<Image>();
+            icon.rectTransform.SetParent(counterRect, false);
+            icon.rectTransform.anchorMin = icon.rectTransform.anchorMax = icon.rectTransform.pivot = new Vector2(0f, 0.5f);
+            icon.rectTransform.sizeDelta = new Vector2(32f, 32f);
+            icon.sprite = LoadFrames(FruitSheet(Fruit.Kind.Apple))[0];
+
+            Text fruitText = AddText(counterRect, "Contador", 12, TextAnchor.MiddleLeft);
+            fruitText.rectTransform.anchorMin = new Vector2(0f, 0f);
+            fruitText.rectTransform.anchorMax = new Vector2(1f, 1f);
+            fruitText.rectTransform.offsetMin = new Vector2(25f, 0f);
+            fruitText.rectTransform.offsetMax = Vector2.zero;
+
+            Text messageText = AddText(root.transform, "Mensaje", 24, TextAnchor.MiddleCenter);
+            messageText.rectTransform.anchorMin = Vector2.zero;
+            messageText.rectTransform.anchorMax = Vector2.one;
+            messageText.rectTransform.offsetMin = messageText.rectTransform.offsetMax = Vector2.zero;
+
+            var hud = root.AddComponent<LevelHud>();
+            SetFields(hud, ("_fruitCounter", counter), ("_fruitText", fruitText), ("_messageText", messageText));
+            SavePrefab(root, HudPrefabPath);
+        }
+
+        private static Text AddText(Transform parent, string objectName, int fontSize, TextAnchor alignment)
+        {
+            var text = new GameObject(objectName, typeof(RectTransform)).AddComponent<Text>();
+            text.rectTransform.SetParent(parent, false);
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = fontSize;
+            text.alignment = alignment;
+            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            text.verticalOverflow = VerticalWrapMode.Overflow;
+            text.color = Color.white;
+            text.raycastTarget = false;
+            text.gameObject.AddComponent<Outline>().effectColor = Color.black;
+            return text;
+        }
+
+        private static string FruitSheet(Fruit.Kind kind) => $"{Art}/Items/Fruits/{kind}.png";
+
         private static SpriteRenderer AddSprite(GameObject root, string character, string firstClip, string sortingLayer, int order)
         {
             var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{AnimationsFolder}/{character}/{firstClip}.anim");
@@ -414,8 +590,10 @@ namespace Platformer.Editor
 
             GameObject player = Spawn(PlayerPrefabPath, new Vector2(exampleLayout ? -6f : 0f, 1f));
             if (exampleLayout) SpawnExampleObjects();
+            else Spawn(GoalPrefabPath, new Vector2(18f, 2f));
 
             CreateCamera(player.transform.position);
+            PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(HudPrefabPath));
 
             EditorSceneManager.SaveScene(scene, scenePath);
             FocusPainting(terrain);
@@ -445,7 +623,10 @@ namespace Platformer.Editor
             Fill(terrain, spikes, 45, 53, 0, 0);            // foso de pinchos
             Fill(terrain, LoadTile("Caramelo"), 48, 50, 2, 2);
             Fill(terrain, LoadTile("Tierra"), 62, 67, 2, 2);
-            Fill(terrain, grass, 73, 76, -4, 9);            // pared final
+            // foso de 12 tiles (73..84): se cruza en la plataforma móvil
+            Fill(terrain, grass, 85, 104, -4, -1);          // tercer suelo
+            Fill(terrain, grass, 93, 104, 0, 6);            // acantilado: solo se sube con el trampolín
+            Fill(terrain, grass, 105, 108, -4, 13);         // pared final
         }
 
         private static void SpawnExampleObjects()
@@ -454,6 +635,26 @@ namespace Platformer.Editor
             Spawn(SawPrefabPath, new Vector2(58f, 1f), new Vector2(0f, 4f));
             Spawn(EnemyPrefabPath, new Vector2(62.5f, 4f), new Vector2(5f, 0f));
             Spawn(EnemyPrefabPath, new Vector2(64.5f, 1f), new Vector2(-3f, 0f));
+
+            Spawn(PlatformPrefabPath, new Vector2(75f, -0.25f), new Vector2(8f, 0f));
+            Spawn(TrampolinePrefabPath, new Vector2(89.5f, 0.875f));
+            Spawn(GoalPrefabPath, new Vector2(99f, 9f));
+
+            SpawnFruit(Fruit.Kind.Apple, new Vector2(8.5f, 3f));
+            SpawnFruit(Fruit.Kind.Apple, new Vector2(14.5f, 4f));
+            SpawnFruit(Fruit.Kind.Bananas, new Vector2(22.5f, 3f));
+            SpawnFruit(Fruit.Kind.Cherries, new Vector2(41f, 3.5f));
+            SpawnFruit(Fruit.Kind.Strawberry, new Vector2(49f, 4.5f));
+            SpawnFruit(Fruit.Kind.Kiwi, new Vector2(79f, 2f));
+            SpawnFruit(Fruit.Kind.Melon, new Vector2(89.5f, 5f));
+            SpawnFruit(Fruit.Kind.Pineapple, new Vector2(96f, 8f));
+        }
+
+        private static void SpawnFruit(Fruit.Kind kind, Vector2 position)
+        {
+            var fruit = new SerializedObject(Spawn(FruitPrefabPath, position).GetComponent<Fruit>());
+            fruit.FindProperty("_kind").enumValueIndex = (int)kind;
+            fruit.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static GameObject Spawn(string prefabPath, Vector2 position, Vector2? patrolOffset = null)

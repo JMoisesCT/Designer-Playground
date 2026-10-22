@@ -11,6 +11,7 @@ namespace Platformer
         private const float JumpBufferTime = 0.1f;  // margen para pulsar salto un poco antes de tocar el suelo
         private const float JumpCutMultiplier = 0.5f;
         private const float MaxFallSpeed = 20f;
+        private const float BounceGraceTime = 0.1f; // tras rebotar, sigue contando como pisotón (dos enemigos juntos)
 
         private static readonly int IdleState = Animator.StringToHash("Idle");
         private static readonly int RunState = Animator.StringToHash("Run");
@@ -38,14 +39,18 @@ namespace Platformer
         [SerializeField] private LayerMask _groundLayers;
 
         private ContactFilter2D _groundFilter;
+        private readonly Collider2D[] _groundColliders = new Collider2D[4];
         private float _moveInput;
         private bool _jumpHeld;
         private bool _isJumping;
         private float _coyoteTimer;
         private float _jumpBufferTimer;
         private int _currentState;
+        private float _lastBounceTime = -1f;
 
         public bool IsGrounded { get; private set; }
+        public bool JustBounced => Time.time - _lastBounceTime < BounceGraceTime;
+        public float Gravity => _gravity;
 
         private void Awake()
         {
@@ -83,11 +88,14 @@ namespace Platformer
             _body.gravityScale = _gravity;
             Vector2 velocity = _body.linearVelocity;
 
-            IsGrounded = velocity.y <= 0.01f && _body.IsTouching(_groundFilter);
+            // Encima de una plataforma móvil, el jugador se mueve con ella.
+            Vector2 groundVelocity = GetGroundVelocity();
+            IsGrounded = velocity.y - groundVelocity.y <= 0.01f && _body.IsTouching(_groundFilter);
             _coyoteTimer = IsGrounded ? CoyoteTime : _coyoteTimer - dt;
             _jumpBufferTimer -= dt;
 
-            velocity.x = _moveInput * _moveSpeed;
+            velocity.x = _moveInput * _moveSpeed + groundVelocity.x;
+            if (IsGrounded && groundVelocity.y < 0f) velocity.y = groundVelocity.y;
 
             if (_jumpBufferTimer > 0f && _coyoteTimer > 0f)
             {
@@ -114,6 +122,28 @@ namespace Platformer
         {
             _body.linearVelocity = new Vector2(_body.linearVelocity.x, force);
             _isJumping = false;
+            _lastBounceTime = Time.time;
+        }
+
+        // Deja de responder a los controles y se queda quieto (por ejemplo, al llegar a la meta).
+        public void Stop()
+        {
+            enabled = false;
+            _body.linearVelocity = new Vector2(0f, Mathf.Min(_body.linearVelocity.y, 0f));
+            _currentState = IdleState;
+            _animator.Play(IdleState);
+        }
+
+        // Velocidad de lo que hay bajo los pies: 0 en el suelo normal, la de la plataforma si es móvil.
+        private Vector2 GetGroundVelocity()
+        {
+            int count = _body.GetContacts(_groundFilter, _groundColliders);
+            for (int i = 0; i < count; i++)
+            {
+                Rigidbody2D ground = _groundColliders[i].attachedRigidbody;
+                if (ground != null && ground.bodyType == RigidbodyType2D.Kinematic) return ground.linearVelocity;
+            }
+            return Vector2.zero;
         }
 
         private void UpdateAnimation()
