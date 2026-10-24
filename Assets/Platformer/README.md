@@ -1,8 +1,8 @@
 # Tutorial: tu primer nivel de plataformas
 
-En este tutorial vas a crear un nivel de plataformas **sin escribir código**: dibujas el escenario, colocas enemigos y trampas, ajustas cómo salta el personaje y lo pruebas.
+En este tutorial vas a crear un nivel de plataformas **sin escribir código**: dibujas el escenario, colocas enemigos, trampas, frutas y banderas, ajustas cómo salta el personaje, pones límites a la cámara, cambias los sonidos y lo pruebas.
 
-Tiempo: unos 30 minutos.
+Tiempo: unos 45 minutos.
 
 ---
 

@@ -5,10 +5,10 @@ Kits para crear niveles de videojuegos 2D en Unity **sin programar**: dibujas el
 - Unity **6000.3** (Unity 6.3). Abre la carpeta del proyecto desde Unity Hub.
 - Gráficos: Pixel Adventure 1. Sonidos: Kenney.
 
-| Juego | Tutorial | Menú de Unity |
-|---|---|---|
-| Plataformas | [`Assets/Platformer/README.md`](Assets/Platformer/README.md) | **Platformer** |
-| Top-down | *(próximamente)* | |
+| Juego | Qué trae | Tutorial | Menú de Unity |
+|---|---|---|---|
+| Plataformas | Correr, saltar y doble salto; enemigos, pinchos y sierras; plataformas móviles y trampolines; frutas, banderas de control y meta; límites de cámara y sonidos. | [`Assets/Platformer/README.md`](Assets/Platformer/README.md) | **Platformer** |
+| Top-down | *(próximamente)* | | |
 
 ## Reglas
 
