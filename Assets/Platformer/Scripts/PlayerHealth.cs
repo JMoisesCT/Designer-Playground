@@ -20,6 +20,10 @@ namespace Platformer
         [Tooltip("Pequeño salto que da el personaje al morir.")]
         [SerializeField, Range(0f, 20f)] private float _deathJump = 10f;
 
+        [Header("Sonido")]
+        [Tooltip("Sonido al morir. Déjalo vacío para que no suene.")]
+        [SerializeField] private AudioClip _deathSound;
+
         [Header("Referencias")]
         [SerializeField] private PlayerController _controller;
         [SerializeField] private Rigidbody2D _body;
@@ -29,6 +33,12 @@ namespace Platformer
         private readonly List<ContactPoint2D> _contacts = new();
 
         public bool IsDead { get; private set; }
+
+        private void Awake()
+        {
+            // Si ya tocó una bandera de control, empieza en ella.
+            if (Checkpoint.TryGetRespawn(out Vector2 respawn)) transform.position = respawn;
+        }
 
         private void Update()
         {
@@ -63,6 +73,7 @@ namespace Platformer
             _collider.enabled = false;
             _body.linearVelocity = new Vector2(0f, _deathJump);
             _animator.Play(HitState);
+            Sound.Play(_deathSound);
             StartCoroutine(RestartLevel());
         }
 

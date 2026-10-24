@@ -223,6 +223,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Platformer::Platformer.StompableEnemy
   _canBeStomped: 1
   _bounceForce: 12
+  _stompSound: {fileID: 8300000, guid: bcdb152c75ed96341b5225892021d6e3, type: 3}
   _collider: {fileID: 7257428948721319560}
   _animator: {fileID: 1999398608192652431}
   _mover: {fileID: 7161437590580736352}

@@ -24,6 +24,9 @@ namespace Platformer
         [Tooltip("Qué fruta es. Solo cambia el dibujo.")]
         [SerializeField] private Kind _kind;
 
+        [Tooltip("Sonido al recogerla. Déjalo vacío para que no suene.")]
+        [SerializeField] private AudioClip _sound;
+
         [Header("Referencias")]
         [SerializeField] private Collider2D _collider;
         [SerializeField] private Animator _animator;
@@ -42,6 +45,7 @@ namespace Platformer
 
             _collider.enabled = false;
             _animator.Play(CollectedState);
+            Sound.Play(_sound);
             LevelHud hud = FindFirstObjectByType<LevelHud>();
             if (hud != null) hud.AddFruit();
             Destroy(gameObject, CollectedTime);

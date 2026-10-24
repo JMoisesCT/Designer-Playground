@@ -177,4 +177,5 @@ MonoBehaviour:
   _nextLevel: 
   _message: "\xA1Nivel completado!"
   _delay: 2
+  _sound: {fileID: 8300000, guid: ad632509822a8304cbbe057eb137a5c3, type: 3}
   _animator: {fileID: 7479772217473888959}

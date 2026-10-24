@@ -10,6 +10,9 @@ namespace Platformer
         [Tooltip("Impulso hacia arriba. Con el trampolín seleccionado, la línea verde muestra hasta dónde sube el jugador.")]
         [SerializeField, Range(5f, 50f)] private float _bounceForce = 25f;
 
+        [Tooltip("Sonido al rebotar. Déjalo vacío para que no suene.")]
+        [SerializeField] private AudioClip _sound;
+
         [Header("Referencias")]
         [SerializeField] private Collider2D _collider;
         [SerializeField] private Animator _animator;
@@ -24,6 +27,7 @@ namespace Platformer
 
             player.Bounce(_bounceForce);
             _animator.Play(JumpState, 0, 0f);
+            Sound.Play(_sound);
         }
 
         private void OnValidate()

@@ -14,6 +14,9 @@ namespace Platformer
         [Tooltip("Impulso hacia arriba que recibe el jugador al pisarlo.")]
         [SerializeField, Range(0f, 30f)] private float _bounceForce = 12f;
 
+        [Tooltip("Sonido al pisarlo. Déjalo vacío para que no suene.")]
+        [SerializeField] private AudioClip _stompSound;
+
         [Header("Referencias")]
         [SerializeField] private Collider2D _collider;
         [SerializeField] private Animator _animator;
@@ -46,6 +49,7 @@ namespace Platformer
             _collider.enabled = false;
             if (_mover != null) _mover.enabled = false;
             if (_animator != null) _animator.Play(HitState);
+            Sound.Play(_stompSound);
             Destroy(gameObject, 0.4f);
         }
 

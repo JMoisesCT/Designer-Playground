@@ -33,7 +33,7 @@ Abre el proyecto desde **Unity Hub**. Estas son las partes de la ventana que vas
 | Saltar | `Espacio` (mantén para saltar más alto) | Botón de abajo (A / ✕) |
 
 3. Prueba a saltar encima de un enemigo: desaparece y rebotas. Si lo tocas de lado, o tocas los pinchos o la sierra, mueres y el nivel vuelve a empezar.
-4. Recoge las frutas (el contador está arriba a la izquierda), cruza el foso en la plataforma que se mueve, sube al acantilado con el trampolín y toca el trofeo para terminar el nivel.
+4. Recoge las frutas (el contador está arriba a la izquierda), toca la bandera antes del foso grande (si mueres, vuelves a ella), cruza el foso en la plataforma que se mueve, sube al acantilado con el trampolín y toca el trofeo para terminar el nivel.
 5. Pulsa **Play** otra vez para salir.
 
 > ⚠️ **Muy importante:** lo que cambies **mientras está en Play** se pierde al salir. Sal siempre de Play antes de editar.
@@ -137,14 +137,17 @@ También están en `Assets/Platformer/Prefabs/`:
 
 ---
 
-## 6. Frutas y meta
+## 6. Frutas, banderas y meta
 
 | Prefab | Qué hace |
 |---|---|
 | **Fruta** | Se recoge al tocarla. El contador de arriba muestra cuántas llevas y cuántas hay en el nivel. |
+| **Bandera** | Punto de control: al tocarla se despliega y, si mueres, vuelves a aparecer en ella en vez de al principio. |
 | **Meta** | El trofeo del final. Tu nivel ya trae una; si la borras, arrastra este prefab. |
 
 **Fruta:** en el Inspector, **Kind** elige el dibujo: manzana, plátano, cerezas, kiwi, melón, naranja, piña o fresa. Coloca frutas en sitios difíciles para premiar al que se arriesga. Si el nivel no tiene frutas, el contador no aparece.
+
+**Bandera:** pon el pie del mástil sobre el suelo, justo **antes** de una parte difícil. Puedes poner varias: vale la última que toques. Al reaparecer, los enemigos y las frutas vuelven a estar en su sitio (y el contador empieza de cero). Comprueba que no haya un enemigo caminando justo donde está la bandera.
 
 **Meta:** pon los pies del trofeo sobre el suelo. En el Inspector:
 
@@ -167,8 +170,9 @@ Selecciona **Jugador** en la Hierarchy. En el Inspector, en *Player Controller*:
 | **Move Speed** | Velocidad al correr |
 | **Jump Force** | Impulso del salto: más alto = salta más alto y más lejos |
 | **Gravity** | Más alta = cae más rápido y salta menos. Más baja = salto "lunar" |
+| **Double Jump** | Márcalo para poder saltar otra vez en el aire. Pisar a un enemigo o un trampolín lo recarga. |
 
-Con el Jugador seleccionado, la vista Scene dibuja en **amarillo** su salto más largo y te dice cuántos tiles sube y avanza. Úsalo para comprobar que cada hueco y cada plataforma se pueden alcanzar. (Si no ves nada, activa el botón **Gizmos** de la barra de la vista Scene).
+Con el Jugador seleccionado, la vista Scene dibuja en **amarillo** su salto más largo y te dice cuántos tiles sube y avanza. Si activas *Double Jump*, también dibuja el doble salto más largo (el segundo salto justo en lo más alto del primero). Úsalo para comprobar que cada hueco y cada plataforma se pueden alcanzar. (Si no ves nada, activa el botón **Gizmos** de la barra de la vista Scene).
 
 La **línea roja** horizontal es la altura de caída: si el jugador cae por debajo, muere. Cámbiala en *Player Health → Death Height* y ponla por debajo de tu nivel.
 
@@ -176,7 +180,30 @@ La **línea roja** horizontal es la altura de caída: si el jugador cae por deba
 
 ---
 
-## 8. Guarda
+## 8. Límites de la cámara
+
+Al principio la cámara sigue al jugador a todas partes, también fuera del nivel: debajo del suelo o más allá de las paredes. Cuando tu nivel esté casi terminado, ponle límites:
+
+1. Selecciona **Main Camera** en la Hierarchy.
+2. En *Camera Follow*, marca **Use Bounds**. Aparece un **rectángulo verde** en la vista Scene.
+3. Pulsa **Ajustar al terreno pintado**: el rectángulo rodea todo lo que has pintado y deja algo de cielo por encima.
+4. Si quieres afinarlo, arrastra los **círculos verdes** de sus esquinas.
+
+La cámara nunca enseña nada fuera del rectángulo. Si el jugador cae por un hueco, la cámara se queda en el borde de abajo y el jugador desaparece por debajo de la pantalla.
+
+> ⚠️ Si después agrandas el nivel, agranda también el rectángulo (o pulsa otra vez *Ajustar al terreno pintado*). Si no, la cámara se para y el jugador se sale de la pantalla.
+
+---
+
+## 9. Cambia los sonidos
+
+Cada objeto trae su sonido: saltar, morir, pisar a un enemigo, recoger una fruta, el trampolín, la bandera y la meta. Para cambiarlo, selecciona el objeto (o su prefab en `Assets/Platformer/Prefabs/`) y en el Inspector arrastra otro sonido al campo **Sound** (*Jump Sound* y *Death Sound* en el Jugador; *Stomp Sound* en el Enemigo). Hay muchos en `Assets/ThirdParty/Kenney/Audio_DigitalSFX/Audio/` y músicas cortas en `Assets/ThirdParty/Kenney/Audio_MusicJingles/Audio/`. Déjalo vacío para que no suene.
+
+> **Truco:** haz clic en un sonido en la ventana Project y pulsa el botón ▶ de la parte de abajo del Inspector para escucharlo.
+
+---
+
+## 10. Guarda
 
 `Ctrl + S`. Guarda a menudo.
 
@@ -190,7 +217,9 @@ La **línea roja** horizontal es la altura de caída: si el jugador cae por deba
 4. **Luna:** baja la gravedad y diseña un nivel con huecos enormes.
 5. **La fruta imposible:** esconde una fruta en un sitio al que solo se llegue con un trampolín y un salto perfecto.
 6. **La saga:** tres niveles encadenados con *Next Level*, cada uno más difícil que el anterior.
-7. **Intercambio:** juega el nivel de un compañero y dile qué parte fue la más difícil.
+7. **Doble o nada:** activa *Double Jump* y diseña un pasillo que solo se pueda superar con el doble salto. Usa el arco amarillo para medirlo.
+8. **El largo camino:** un nivel muy largo con tres banderas. Pon la parte más difícil justo después de la última.
+9. **Intercambio:** juega el nivel de un compañero y dile qué parte fue la más difícil.
 
 ---
 
@@ -207,4 +236,7 @@ La **línea roja** horizontal es la altura de caída: si el jugador cae por deba
 | No veo el contador de frutas | Arrastra el prefab **Interfaz** a la escena (solo uno). Sin frutas en el nivel, no aparece. |
 | La meta no lleva al siguiente nivel | Arrastra la escena a *Next Level*. Para el juego exportado, añade todos los niveles en *File → Build Profiles → Scene List*. |
 | El trampolín no me lanza | Tienes que caerle encima; si llegas de lado, choca como una pared. |
+| La cámara se para y el jugador se sale de la pantalla | El nivel es más grande que el rectángulo verde de la cámara: pulsa *Ajustar al terreno pintado* en *Main Camera*. |
+| No suena nada | Comprueba que el botón **Mute Audio** (el altavoz de la barra de la vista Game) no está activado. |
+| Al morir no vuelvo a la bandera | Tienes que tocarla primero (se despliega). Al darle a Play de nuevo, el nivel siempre empieza desde el principio. |
 | Cambié algo y se perdió | Lo cambiaste en Play. Sal de Play y vuelve a cambiarlo. |

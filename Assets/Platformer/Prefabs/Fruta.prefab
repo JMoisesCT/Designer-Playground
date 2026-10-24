@@ -165,6 +165,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Platformer::Platformer.Fruit
   _kind: 0
+  _sound: {fileID: 8300000, guid: bde0405a97e03bd4baa4f762217f5401, type: 3}
   _collider: {fileID: 6706596157091086099}
   _animator: {fileID: 29031650474325725}
   _sprite: {fileID: 8259137651303040174}

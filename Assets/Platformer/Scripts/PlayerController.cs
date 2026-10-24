@@ -17,6 +17,7 @@ namespace Platformer
         private static readonly int RunState = Animator.StringToHash("Run");
         private static readonly int JumpState = Animator.StringToHash("Jump");
         private static readonly int FallState = Animator.StringToHash("Fall");
+        private static readonly int DoubleJumpState = Animator.StringToHash("DoubleJump");
 
         [Header("Movimiento")]
         [Tooltip("Velocidad al correr, en tiles por segundo.")]
@@ -27,6 +28,13 @@ namespace Platformer
 
         [Tooltip("Gravedad del personaje. Más alto = cae más rápido y el salto es más bajo.")]
         [SerializeField, Range(0.5f, 10f)] private float _gravity = 4f;
+
+        [Tooltip("Permite saltar otra vez en el aire. Pisar a un enemigo o un trampolín lo recarga.")]
+        [SerializeField] private bool _doubleJump;
+
+        [Header("Sonido")]
+        [Tooltip("Sonido al saltar. Déjalo vacío para que no suene.")]
+        [SerializeField] private AudioClip _jumpSound;
 
         [Header("Referencias")]
         [SerializeField] private Rigidbody2D _body;
@@ -43,6 +51,7 @@ namespace Platformer
         private float _moveInput;
         private bool _jumpHeld;
         private bool _isJumping;
+        private bool _usedDoubleJump;
         private float _coyoteTimer;
         private float _jumpBufferTimer;
         private int _currentState;
@@ -93,16 +102,21 @@ namespace Platformer
             IsGrounded = velocity.y - groundVelocity.y <= 0.01f && _body.IsTouching(_groundFilter);
             _coyoteTimer = IsGrounded ? CoyoteTime : _coyoteTimer - dt;
             _jumpBufferTimer -= dt;
+            if (IsGrounded) _usedDoubleJump = false;
 
             velocity.x = _moveInput * _moveSpeed + groundVelocity.x;
             if (IsGrounded && groundVelocity.y < 0f) velocity.y = groundVelocity.y;
 
-            if (_jumpBufferTimer > 0f && _coyoteTimer > 0f)
+            // Si ya no hay margen para saltar desde el suelo, el salto gasta el doble salto.
+            bool canJumpFromGround = _coyoteTimer > 0f;
+            if (_jumpBufferTimer > 0f && (canJumpFromGround || (_doubleJump && !_usedDoubleJump)))
             {
+                if (!canJumpFromGround) _usedDoubleJump = true;
                 velocity.y = _jumpForce;
                 _isJumping = true;
                 _jumpBufferTimer = 0f;
                 _coyoteTimer = 0f;
+                Sound.Play(_jumpSound);
             }
 
             // Soltar el botón mientras sube corta el salto: toque corto = salto bajo.
@@ -122,6 +136,7 @@ namespace Platformer
         {
             _body.linearVelocity = new Vector2(_body.linearVelocity.x, force);
             _isJumping = false;
+            _usedDoubleJump = false;
             _lastBounceTime = Time.time;
         }
 
@@ -149,7 +164,8 @@ namespace Platformer
         private void UpdateAnimation()
         {
             int state;
-            if (!IsGrounded) state = _body.linearVelocity.y > 0f ? JumpState : FallState;
+            if (!IsGrounded && _body.linearVelocity.y > 0f) state = _usedDoubleJump ? DoubleJumpState : JumpState;
+            else if (!IsGrounded) state = FallState;
             else state = Mathf.Abs(_moveInput) > 0.01f ? RunState : IdleState;
 
             if (state == _currentState) return;
@@ -176,28 +192,44 @@ namespace Platformer
                 ? new Vector2(bodyCollider.bounds.center.x, bodyCollider.bounds.min.y)
                 : (Vector2)transform.position;
 
-            float airTime = 2f * _jumpForce / gravity;
+            float apexTime = _jumpForce / gravity;
             float height = _jumpForce * _jumpForce / (2f * gravity);
-            float distance = _moveSpeed * airTime;
+            string label = $"Salto: {height:0.0} tiles de alto, {_moveSpeed * 2f * apexTime:0.0} de largo";
 
             Gizmos.color = Color.yellow;
-            const int segments = 30;
             for (int side = -1; side <= 1; side += 2)
             {
-                Vector2 previous = feet;
-                for (int i = 1; i <= segments; i++)
+                DrawJumpArc(feet, side, gravity, 2f * apexTime);
+            }
+
+            // Doble salto más largo: el segundo salto en lo más alto del primero, hasta volver a la altura de los pies.
+            if (_doubleJump)
+            {
+                float secondTime = apexTime * (1f + Mathf.Sqrt(2f));
+                for (int side = -1; side <= 1; side += 2)
                 {
-                    float t = airTime * i / segments;
-                    var point = new Vector2(feet.x + side * _moveSpeed * t, feet.y + _jumpForce * t - 0.5f * gravity * t * t);
-                    Gizmos.DrawLine(previous, point);
-                    previous = point;
+                    DrawJumpArc(feet + new Vector2(side * _moveSpeed * apexTime, height), side, gravity, secondTime);
                 }
+                height *= 2f;
+                label += $"\nDoble salto: {height:0.0} de alto, {_moveSpeed * (apexTime + secondTime):0.0} de largo";
             }
 
 #if UNITY_EDITOR
-            UnityEditor.Handles.Label(feet + Vector2.up * (height + 0.8f),
-                $"Salto: {height:0.0} tiles de alto, {distance:0.0} de largo");
+            UnityEditor.Handles.Label(feet + Vector2.up * (height + 1.2f), label);
 #endif
+        }
+
+        private void DrawJumpArc(Vector2 start, int side, float gravity, float duration)
+        {
+            const int segments = 30;
+            Vector2 previous = start;
+            for (int i = 1; i <= segments; i++)
+            {
+                float t = duration * i / segments;
+                var point = new Vector2(start.x + side * _moveSpeed * t, start.y + _jumpForce * t - 0.5f * gravity * t * t);
+                Gizmos.DrawLine(previous, point);
+                previous = point;
+            }
         }
     }
 }

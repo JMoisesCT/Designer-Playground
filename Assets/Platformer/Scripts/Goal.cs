@@ -18,6 +18,9 @@ namespace Platformer
         [Tooltip("Segundos que se ve el mensaje antes de cambiar de nivel.")]
         [SerializeField, Range(0f, 5f)] private float _delay = 2f;
 
+        [Tooltip("Música al llegar. Déjalo vacío para que no suene.")]
+        [SerializeField] private AudioClip _sound;
+
         [Header("Referencias")]
         [SerializeField] private Animator _animator;
 
@@ -32,6 +35,7 @@ namespace Platformer
             _reached = true;
             player.GetComponent<PlayerController>().Stop();
             if (_animator != null) _animator.Play(PressedState);
+            Sound.Play(_sound);
 
             LevelHud hud = FindFirstObjectByType<LevelHud>();
             if (hud != null) hud.ShowMessage(_message);
@@ -42,6 +46,7 @@ namespace Platformer
         private IEnumerator LoadNextLevel()
         {
             yield return new WaitForSeconds(_delay);
+            Checkpoint.Clear(); // el siguiente nivel (o este, si se repite) empieza desde el principio
             if (string.IsNullOrEmpty(_nextLevel)) LevelLoader.Restart();
             else LevelLoader.Load(_nextLevel);
         }

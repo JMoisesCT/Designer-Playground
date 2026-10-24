@@ -175,5 +175,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Platformer::Platformer.Trampoline
   _bounceForce: 25
+  _sound: {fileID: 8300000, guid: 54826188b1da12743b54e7dea4c89d23, type: 3}
   _collider: {fileID: 8476361141079045573}
   _animator: {fileID: 5983173850001406825}

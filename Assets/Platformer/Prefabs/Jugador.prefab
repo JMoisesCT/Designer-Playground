@@ -206,6 +206,8 @@ MonoBehaviour:
   _moveSpeed: 7
   _jumpForce: 16
   _gravity: 4
+  _doubleJump: 0
+  _jumpSound: {fileID: 8300000, guid: f1531cacf2e266f4794561b862426ed0, type: 3}
   _body: {fileID: 6610086532815479501}
   _sprite: {fileID: 5406626395763575591}
   _animator: {fileID: 7027667089438111454}
@@ -229,6 +231,7 @@ MonoBehaviour:
   _deathHeight: -10
   _restartDelay: 1
   _deathJump: 10
+  _deathSound: {fileID: 8300000, guid: c6314dcc108561d4e89f15bda89a9e9b, type: 3}
   _controller: {fileID: 5499230147036330723}
   _body: {fileID: 6610086532815479501}
   _collider: {fileID: 5772553445711657373}

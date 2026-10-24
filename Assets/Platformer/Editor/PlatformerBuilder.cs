@@ -44,6 +44,18 @@ namespace Platformer.Editor
         private const string PlatformPrefabPath = PrefabsFolder + "/PlataformaMovil.prefab";
         private const string TrampolinePrefabPath = PrefabsFolder + "/Trampolin.prefab";
         private const string HudPrefabPath = PrefabsFolder + "/Interfaz.prefab";
+        private const string CheckpointPrefabPath = PrefabsFolder + "/Bandera.prefab";
+
+        // Sonidos de Kenney (el alumno puede cambiarlos en el Inspector de cada prefab).
+        private const string Sfx = "Assets/ThirdParty/Kenney/Audio_DigitalSFX/Audio";
+        private const string Jingles = "Assets/ThirdParty/Kenney/Audio_MusicJingles/Audio/8-Bit jingles";
+        private const string JumpSound = Sfx + "/phaseJump1.ogg";
+        private const string DeathSound = Sfx + "/lowDown.ogg";
+        private const string StompSound = Sfx + "/pepSound1.ogg";
+        private const string FruitSound = Sfx + "/highUp.ogg";
+        private const string TrampolineSound = Sfx + "/phaserUp2.ogg";
+        private const string CheckpointSound = Sfx + "/threeTone1.ogg";
+        private const string GoalSound = Jingles + "/jingles_NES00.ogg";
 
         private const string TerrainTilemapName = "Terreno";
 
@@ -98,7 +110,8 @@ namespace Platformer.Editor
                 BuildClip("Jugador", "Run", $"{frog}/Run (32x32).png", true),
                 BuildClip("Jugador", "Jump", $"{frog}/Jump (32x32).png", true),
                 BuildClip("Jugador", "Fall", $"{frog}/Fall (32x32).png", true),
-                BuildClip("Jugador", "Hit", $"{frog}/Hit (32x32).png", false));
+                BuildClip("Jugador", "Hit", $"{frog}/Hit (32x32).png", false),
+                BuildClip("Jugador", "DoubleJump", $"{frog}/Double Jump (32x32).png", true));
 
             string mask = Art + "/Main Characters/Mask Dude";
             BuildController("Enemigo",
@@ -112,6 +125,13 @@ namespace Platformer.Editor
             BuildController("Meta",
                 BuildClip("Meta", "Idle", $"{end}/End (Idle).png", false),
                 BuildClip("Meta", "Pressed", $"{end}/End (Pressed) (64x64).png", false));
+
+            string flag = Art + "/Items/Checkpoints/Checkpoint";
+            BuildController("Bandera",
+                BuildClip("Bandera", "NoFlag", $"{flag}/Checkpoint (No Flag).png", false),
+                BuildClip("Bandera", "FlagOut", $"{flag}/Checkpoint (Flag Out) (64x64).png", false),
+                BuildClip("Bandera", "FlagIdle", $"{flag}/Checkpoint (Flag Idle)(64x64).png", true));
+            AddExitTransition("Bandera", "FlagOut", "FlagIdle");
 
             // Un estado por fruta (mismo nombre que Fruit.Kind) y "Collected" al recogerla.
             var fruitClips = new List<AnimationClip>();
@@ -186,6 +206,21 @@ namespace Platformer.Editor
                 state.writeDefaultValues = false;
             }
             stateMachine.defaultState = stateMachine.states[0].state;
+            EditorUtility.SetDirty(controller);
+        }
+
+        // Al terminar el estado "from" pasa solo a "to" (la bandera se despliega y después ondea).
+        private static void AddExitTransition(string character, string from, string to)
+        {
+            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>($"{AnimationsFolder}/{character}/{character}.controller");
+            ChildAnimatorState[] states = controller.layers[0].stateMachine.states;
+            AnimatorState fromState = states.First(s => s.state.name == from).state;
+            AnimatorState toState = states.First(s => s.state.name == to).state;
+
+            AnimatorStateTransition transition = fromState.AddTransition(toState);
+            transition.hasExitTime = true;
+            transition.exitTime = 1f;
+            transition.duration = 0f;
             EditorUtility.SetDirty(controller);
         }
 
@@ -290,6 +325,7 @@ namespace Platformer.Editor
                 BuildFruitPrefab();
                 BuildPlatformPrefab();
                 BuildTrampolinePrefab();
+                BuildCheckpointPrefab();
                 BuildHudPrefab();
             }
             finally
@@ -327,13 +363,15 @@ namespace Platformer.Editor
             var controller = root.AddComponent<PlayerController>();
             SetFields(controller,
                 ("_body", body), ("_sprite", sprite), ("_animator", animator),
-                ("_moveAction", FindAction(actions, "Move")), ("_jumpAction", FindAction(actions, "Jump")));
+                ("_moveAction", FindAction(actions, "Move")), ("_jumpAction", FindAction(actions, "Jump")),
+                ("_jumpSound", LoadSound(JumpSound)));
             var serializedController = new SerializedObject(controller);
             serializedController.FindProperty("_groundLayers").intValue = LayerMask.GetMask("Ground");
             serializedController.ApplyModifiedPropertiesWithoutUndo();
 
             var health = root.AddComponent<PlayerHealth>();
-            SetFields(health, ("_controller", controller), ("_body", body), ("_collider", box), ("_animator", animator));
+            SetFields(health, ("_controller", controller), ("_body", body), ("_collider", box), ("_animator", animator),
+                ("_deathSound", LoadSound(DeathSound)));
 
             SavePrefab(root, PlayerPrefabPath);
         }
@@ -354,7 +392,7 @@ namespace Platformer.Editor
             SetFields(mover, ("_body", body), ("_sprite", sprite));
 
             var enemy = root.AddComponent<StompableEnemy>();
-            SetFields(enemy, ("_collider", box), ("_animator", animator), ("_mover", mover));
+            SetFields(enemy, ("_collider", box), ("_animator", animator), ("_mover", mover), ("_stompSound", LoadSound(StompSound)));
 
             SavePrefab(root, EnemyPrefabPath);
         }
@@ -395,8 +433,25 @@ namespace Platformer.Editor
             box.offset = new Vector2(0f, -0.7f);
 
             var goal = root.AddComponent<Goal>();
-            SetFields(goal, ("_animator", animator));
+            SetFields(goal, ("_animator", animator), ("_sound", LoadSound(GoalSound)));
             SavePrefab(root, GoalPrefabPath);
+        }
+
+        // Bandera de 4×4 tiles como la meta: los pies quedan 2 tiles por debajo del centro y el mástil, a la izquierda.
+        private static void BuildCheckpointPrefab()
+        {
+            var root = new GameObject("Bandera");
+            AddSprite(root, "Bandera", "NoFlag", "Traps", 0);
+            Animator animator = AddAnimator(root, "Bandera");
+
+            var box = root.AddComponent<BoxCollider2D>();
+            box.isTrigger = true;
+            box.size = new Vector2(1.5f, 2.8f);
+            box.offset = new Vector2(-0.5f, -0.6f);
+
+            var checkpoint = root.AddComponent<Checkpoint>();
+            SetFields(checkpoint, ("_animator", animator), ("_sound", LoadSound(CheckpointSound)));
+            SavePrefab(root, CheckpointPrefabPath);
         }
 
         private static void BuildFruitPrefab()
@@ -411,7 +466,7 @@ namespace Platformer.Editor
             circle.offset = new Vector2(0f, 0.1f);
 
             var fruit = root.AddComponent<Fruit>();
-            SetFields(fruit, ("_collider", circle), ("_animator", animator), ("_sprite", sprite));
+            SetFields(fruit, ("_collider", circle), ("_animator", animator), ("_sprite", sprite), ("_sound", LoadSound(FruitSound)));
 
             var serializedFruit = new SerializedObject(fruit);
             SerializedProperty sprites = serializedFruit.FindProperty("_sprites");
@@ -463,7 +518,7 @@ namespace Platformer.Editor
             box.offset = new Vector2(0f, -0.55f);
 
             var trampoline = root.AddComponent<Trampoline>();
-            SetFields(trampoline, ("_collider", box), ("_animator", animator));
+            SetFields(trampoline, ("_collider", box), ("_animator", animator), ("_sound", LoadSound(TrampolineSound)));
             SavePrefab(root, TrampolinePrefabPath);
         }
 
@@ -592,7 +647,15 @@ namespace Platformer.Editor
             if (exampleLayout) SpawnExampleObjects();
             else Spawn(GoalPrefabPath, new Vector2(18f, 2f));
 
-            CreateCamera(player.transform.position);
+            CameraFollow cameraFollow = CreateCamera(player.transform.position);
+            if (exampleLayout)
+            {
+                var serializedCamera = new SerializedObject(cameraFollow);
+                serializedCamera.FindProperty("_useBounds").boolValue = true;
+                serializedCamera.FindProperty("_boundsMin").vector2Value = new Vector2(-14f, -4f);
+                serializedCamera.FindProperty("_boundsMax").vector2Value = new Vector2(109f, 16f);
+                serializedCamera.ApplyModifiedPropertiesWithoutUndo();
+            }
             PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(HudPrefabPath));
 
             EditorSceneManager.SaveScene(scene, scenePath);
@@ -636,6 +699,7 @@ namespace Platformer.Editor
             Spawn(EnemyPrefabPath, new Vector2(62.5f, 4f), new Vector2(5f, 0f));
             Spawn(EnemyPrefabPath, new Vector2(64.5f, 1f), new Vector2(-3f, 0f));
 
+            Spawn(CheckpointPrefabPath, new Vector2(70f, 2f));              // antes del foso de la plataforma móvil
             Spawn(PlatformPrefabPath, new Vector2(75f, -0.25f), new Vector2(8f, 0f));
             Spawn(TrampolinePrefabPath, new Vector2(89.5f, 0.875f));
             Spawn(GoalPrefabPath, new Vector2(99f, 9f));
@@ -697,7 +761,7 @@ namespace Platformer.Editor
         }
 
         // Cámara pixel perfect que sigue al jugador, con el fondo como hijo para que siempre lo cubra.
-        private static void CreateCamera(Vector3 playerPosition)
+        private static CameraFollow CreateCamera(Vector3 playerPosition)
         {
             var cameraObject = new GameObject("Main Camera") { tag = "MainCamera" };
             cameraObject.transform.position = new Vector3(playerPosition.x, playerPosition.y + 1.5f, -10f);
@@ -719,7 +783,7 @@ namespace Platformer.Editor
             pixelPerfect.gridSnapping = PixelPerfectCamera.GridSnapping.PixelSnapping;
             pixelPerfect.cropFrame = PixelPerfectCamera.CropFrame.None;
 
-            cameraObject.AddComponent<CameraFollow>();
+            var cameraFollow = cameraObject.AddComponent<CameraFollow>();
 
             var background = new GameObject("Fondo");
             background.transform.SetParent(cameraObject.transform, false);
@@ -729,6 +793,7 @@ namespace Platformer.Editor
             spriteRenderer.drawMode = SpriteDrawMode.Tiled;
             spriteRenderer.size = new Vector2(48f, 28f);
             spriteRenderer.sortingLayerName = "Background";
+            return cameraFollow;
         }
 
         // Una luz 2D solo ilumina las Sorting Layers de su lista: sin esto los sprites se ven negros.
@@ -773,6 +838,13 @@ namespace Platformer.Editor
         {
             int underscore = sprite.name.LastIndexOf('_');
             return underscore >= 0 && int.TryParse(sprite.name[(underscore + 1)..], out int index) ? index : 0;
+        }
+
+        private static AudioClip LoadSound(string path)
+        {
+            var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+            if (clip == null) Debug.LogWarning($"[Platformer] Falta el sonido {path}.");
+            return clip;
         }
 
         private static TileBase LoadTile(string tileName)
