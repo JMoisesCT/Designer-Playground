@@ -83,3 +83,6 @@ CLAUDE.local.md
 # Plastic SCM / Unity Version Control (no se usa; solo Git)
 .plastic/
 ignore.conf
+
+# Packs de assets completos (fuera de Assets/, Unity no los importa). Se copia a Assets/ThirdParty solo lo que usa cada kit.
+/[Ss]ourceAssets/

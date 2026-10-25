@@ -1,4 +1,6 @@
 ﻿<Solution>
   <Project Path="Platformer.csproj" />
+  <Project Path="TopDown.Editor.csproj" />
+  <Project Path="TopDown.csproj" />
   <Project Path="Platformer.Editor.csproj" />
 </Solution>
