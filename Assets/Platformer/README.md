@@ -237,6 +237,7 @@ Cada objeto trae su sonido: saltar, morir, pisar a un enemigo, recoger una fruta
 | La meta no lleva al siguiente nivel | Arrastra la escena a *Next Level*. Para el juego exportado, añade todos los niveles en *File → Build Profiles → Scene List*. |
 | El trampolín no me lanza | Tienes que caerle encima; si llegas de lado, choca como una pared. |
 | La cámara se para y el jugador se sale de la pantalla | El nivel es más grande que el rectángulo verde de la cámara: pulsa *Ajustar al terreno pintado* en *Main Camera*. |
+| En el juego exportado el personaje tiembla al correr | Nivel creado con una versión antigua del kit: en *Main Camera → Pixel Perfect Camera*, pon **Grid Snapping** en *None*. |
 | No suena nada | Comprueba que el botón **Mute Audio** (el altavoz de la barra de la vista Game) no está activado. |
 | Al morir no vuelvo a la bandera | Tienes que tocarla primero (se despliega). Al darle a Play de nuevo, el nivel siempre empieza desde el principio. |
 | Cambié algo y se perdió | Lo cambiaste en Play. Sal de Play y vuelve a cambiarlo. |

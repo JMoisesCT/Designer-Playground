@@ -3,6 +3,7 @@
     "rootNamespace": "Platformer",
     "references": [
         "Unity.InputSystem",
+        "Unity.RenderPipelines.Universal.2D.Runtime",
         "UnityEngine.UI"
     ],
     "includePlatforms": [],

@@ -780,7 +780,8 @@ namespace Platformer.Editor
             pixelPerfect.assetsPPU = 16;
             pixelPerfect.refResolutionX = 384;
             pixelPerfect.refResolutionY = 216;
-            pixelPerfect.gridSnapping = PixelPerfectCamera.GridSnapping.PixelSnapping;
+            // Sin Pixel Snapping la cámara avanza en píxeles de pantalla: con zoom ×5 el mundo no se mueve a saltos.
+            pixelPerfect.gridSnapping = PixelPerfectCamera.GridSnapping.None;
             pixelPerfect.cropFrame = PixelPerfectCamera.CropFrame.None;
 
             var cameraFollow = cameraObject.AddComponent<CameraFollow>();

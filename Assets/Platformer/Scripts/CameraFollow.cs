@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 namespace Platformer
 {
@@ -7,8 +8,6 @@ namespace Platformer
     [RequireComponent(typeof(Camera))]
     public class CameraFollow : MonoBehaviour
     {
-        private const float PixelsPerUnit = 16f;
-
         [Tooltip("A quién sigue la cámara. Si se deja vacío, sigue al objeto con el tag Player.")]
         [SerializeField] private Transform _target;
 
@@ -29,6 +28,7 @@ namespace Platformer
         [SerializeField] private Vector2 _boundsMax = new(21f, 14f);
 
         private Camera _camera;
+        private PixelPerfectCamera _pixelPerfect;
         private PlayerHealth _targetHealth;
         private Vector3 _smoothPosition;
         private Vector3 _velocity;
@@ -36,6 +36,7 @@ namespace Platformer
         private void Start()
         {
             _camera = GetComponent<Camera>();
+            _pixelPerfect = GetComponent<PixelPerfectCamera>();
             _smoothPosition = transform.position;
             if (_target != null) _targetHealth = _target.GetComponent<PlayerHealth>();
 
@@ -51,8 +52,8 @@ namespace Platformer
             Vector3 targetPosition = _target.position;
             _smoothPosition = Vector3.SmoothDamp(_smoothPosition, GetGoal(), ref _velocity, _smoothTime);
 
-            // Los sprites se dibujan en píxeles enteros. Se redondean la posición del objetivo y la distancia a él
-            // por separado: así el jugador no vibra un píxel adelante y atrás en pantalla al correr.
+            // Los sprites se dibujan en píxeles de pantalla enteros. Se redondean la posición del objetivo y la distancia
+            // a él por separado: así el jugador no vibra un píxel adelante y atrás en pantalla al correr.
             Vector2 snapped = SnapToPixel(targetPosition) + SnapToPixel(_smoothPosition - targetPosition);
             if (_useBounds) snapped = SnapToPixel(ClampToBounds(snapped));
             transform.position = new Vector3(snapped.x, snapped.y, _smoothPosition.z);
@@ -82,9 +83,10 @@ namespace Platformer
             return Mathf.Clamp(value, min + halfSize, max - halfSize);
         }
 
-        private static Vector2 SnapToPixel(Vector2 value)
+        // Usa la misma rejilla que la Pixel Perfect Camera: píxel de pantalla (o de dibujo si tiene Pixel Snapping).
+        private Vector2 SnapToPixel(Vector2 value)
         {
-            return new Vector2(Mathf.Round(value.x * PixelsPerUnit), Mathf.Round(value.y * PixelsPerUnit)) / PixelsPerUnit;
+            return _pixelPerfect != null ? (Vector2)_pixelPerfect.RoundToPixel(value) : value;
         }
 
         private bool TryFindPlayer()
