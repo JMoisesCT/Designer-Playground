@@ -33,6 +33,8 @@ namespace TopDown.Editor
 
         private const string Art = "Assets/ThirdParty/NinjaAdventure";
         private const string PlayerArt = Art + "/Actor/Character/NinjaGreen/SeparateAnim";
+        private const string EnemySheet = Art + "/Actor/Monster/Slime/Slime.png";
+        private const string ChaserSheet = Art + "/Actor/Monster/Beast/Beast.png";
         private const string FloorSheet = Art + "/Backgrounds/Tilesets/TilesetFloor.png";
         private const string NatureSheet = Art + "/Backgrounds/Tilesets/TilesetNature.png";
         private const string DungeonSheet = Art + "/Backgrounds/Tilesets/TilesetDungeon.png";
@@ -49,6 +51,9 @@ namespace TopDown.Editor
         private const string CheckpointPrefabPath = PrefabsFolder + "/Bandera.prefab";
         private const string GoalPrefabPath = PrefabsFolder + "/Cofre.prefab";
         private const string HudPrefabPath = PrefabsFolder + "/Interfaz.prefab";
+        private const string EnemyPrefabPath = PrefabsFolder + "/Enemigo.prefab";
+        private const string ChaserPrefabPath = PrefabsFolder + "/Perseguidor.prefab";
+        private const string SpikeTrapPrefabPath = PrefabsFolder + "/TrampaPinchos.prefab";
 
         // Sonidos y música de Ninja Adventure (el alumno puede cambiarlos en el Inspector).
         private const string Sfx = Art + "/Audio/Sounds";
@@ -56,6 +61,7 @@ namespace TopDown.Editor
         private const string CheckpointSound = Sfx + "/Bonus/Bonus.wav";
         private const string HurtSound = Sfx + "/Hit & Impact/Hit1.wav";
         private const string DeathSound = Art + "/Audio/Jingles/GameOver.wav";
+        private const string AlertSound = Sfx + "/Alert/Alert.wav";
         private const string GoalSound = Art + "/Audio/Jingles/Success1.wav";
         private const string MusicPath = MusicFolder + "/1 - Adventure Begin.ogg";
 
@@ -68,6 +74,8 @@ namespace TopDown.Editor
             (PlayerArt + "/Idle.png", 16, 16),
             (PlayerArt + "/Walk.png", 16, 16),
             (PlayerArt + "/Dead.png", 16, 16),
+            (EnemySheet, 16, 16),
+            (ChaserSheet, 16, 16),
             (FloorSheet, 16, 16),
             (NatureSheet, 16, 16),
             (DungeonSheet, 16, 16),
@@ -219,20 +227,13 @@ namespace TopDown.Editor
 
         public static void BuildAnimations()
         {
-            // Hojas del personaje: una columna por dirección (abajo, arriba, izquierda, derecha); en Walk, una fila por frame.
-            string[] directions = { "Down", "Up", "Left", "Right" };
-            var playerClips = new List<AnimationClip>();
-            for (int i = 0; i < directions.Length; i++)
-            {
-                playerClips.Add(BuildClip("Jugador", "Idle" + directions[i], 1, false, Frames(PlayerArt + "/Idle.png", i)));
-            }
-            for (int i = 0; i < directions.Length; i++)
-            {
-                playerClips.Add(BuildClip("Jugador", "Walk" + directions[i], 8, true,
-                    Frames(PlayerArt + "/Walk.png", i, i + 4, i + 8, i + 12)));
-            }
+            List<AnimationClip> playerClips = BuildWalkClips("Jugador", PlayerArt + "/Idle.png", PlayerArt + "/Walk.png");
             playerClips.Add(BuildClip("Jugador", "Dead", 1, false, Frames(PlayerArt + "/Dead.png", 0)));
             BuildController("Jugador", playerClips.ToArray());
+
+            // Los monstruos solo tienen la hoja de caminar: quietos, usan su primer frame.
+            BuildController("Enemigo", BuildWalkClips("Enemigo", EnemySheet, EnemySheet).ToArray());
+            BuildController("Perseguidor", BuildWalkClips("Perseguidor", ChaserSheet, ChaserSheet).ToArray());
 
             BuildController("Bandera",
                 BuildClip("Bandera", "Off", 8, true, Frames(FlagOffSheet, 0, 1, 2, 3)),
@@ -241,6 +242,23 @@ namespace TopDown.Editor
             BuildController("Moneda", BuildClip("Moneda", "Spin", 8, true, Frames(CoinSheet, 0, 1, 2, 3)));
 
             AssetDatabase.SaveAssets();
+        }
+
+        // Idle y Walk en las 4 direcciones. Hojas del pack: una columna por dirección (abajo, arriba, izquierda, derecha);
+        // en la de caminar, una fila por frame.
+        private static List<AnimationClip> BuildWalkClips(string character, string idleSheet, string walkSheet)
+        {
+            string[] directions = { "Down", "Up", "Left", "Right" };
+            var clips = new List<AnimationClip>();
+            for (int i = 0; i < directions.Length; i++)
+            {
+                clips.Add(BuildClip(character, "Idle" + directions[i], 1, false, Frames(idleSheet, i)));
+            }
+            for (int i = 0; i < directions.Length; i++)
+            {
+                clips.Add(BuildClip(character, "Walk" + directions[i], 8, true, Frames(walkSheet, i, i + 4, i + 8, i + 12)));
+            }
+            return clips;
         }
 
         private static AnimationClip BuildClip(string character, string clipName, int frameRate, bool loop, Sprite[] frames)
@@ -466,6 +484,9 @@ namespace TopDown.Editor
                 BuildCheckpointPrefab();
                 BuildGoalPrefab();
                 BuildHudPrefab();
+                BuildEnemyPrefab();
+                BuildChaserPrefab();
+                BuildSpikeTrapPrefab();
             }
             finally
             {
@@ -490,6 +511,8 @@ namespace TopDown.Editor
             body.freezeRotation = true;
             body.interpolation = RigidbodyInterpolation2D.Interpolate;
             body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+            // Dormido no recibe OnTriggerStay2D: quieto encima de una trampa que se enciende no recibiría daño.
+            body.sleepMode = RigidbodySleepMode2D.NeverSleep;
 
             // Solo los pies chocan: así el personaje puede pasar justo por delante de un árbol o una roca.
             // Bordes redondeados y sin tocar el borde del tile: si no, se engancha en las esquinas al pasar rozando.
@@ -602,6 +625,76 @@ namespace TopDown.Editor
                 ("_heart", heart), ("_fullHeart", heartFrames[^1]), ("_emptyHeart", heartFrames[0]),
                 ("_coinCounter", counter.gameObject), ("_coinText", coinText), ("_messageText", messageText));
             SavePrefab(root, HudPrefabPath);
+        }
+
+        // Slime que recorre una ruta y quita un corazón al tocarlo. Cinemático: atraviesa árboles y rocas.
+        private static void BuildEnemyPrefab()
+        {
+            GameObject root = NewEnemy("Enemigo", out Rigidbody2D body, out Animator animator);
+            body.bodyType = RigidbodyType2D.Kinematic;
+
+            SetFields(root.AddComponent<PathMover>(), ("_body", body));
+            SetFields(root.AddComponent<WalkAnimator>(), ("_body", body), ("_animator", animator));
+            SavePrefab(root, EnemyPrefabPath);
+        }
+
+        // Bestia que persigue al jugador dentro de su zona. Choca con árboles y rocas, pero no con el jugador:
+        // así no lo empuja, solo le quita corazones.
+        private static void BuildChaserPrefab()
+        {
+            GameObject root = NewEnemy("Perseguidor", out Rigidbody2D body, out Animator animator);
+            body.bodyType = RigidbodyType2D.Dynamic;
+            body.gravityScale = 0f;
+            body.freezeRotation = true;
+
+            // Pies, como el jugador, para que pase rozando por delante de árboles y rocas.
+            var feet = root.AddComponent<BoxCollider2D>();
+            feet.size = new Vector2(0.5f, 0.25f);
+            feet.edgeRadius = 0.0625f;
+            feet.offset = new Vector2(0f, -0.25f);
+            feet.sharedMaterial = AssetDatabase.LoadAssetAtPath<PhysicsMaterial2D>(PhysicsMaterialPath);
+            feet.excludeLayers = LayerMask.GetMask("Player");
+
+            SetFields(root.AddComponent<ChaserEnemy>(), ("_body", body), ("_alertSound", LoadSound(AlertSound)));
+            SetFields(root.AddComponent<WalkAnimator>(), ("_body", body), ("_animator", animator));
+            SavePrefab(root, ChaserPrefabPath);
+        }
+
+        // Lo común a los enemigos: dibujo animado, cuerpo, zona de daño (trigger) y Hazard.
+        private static GameObject NewEnemy(string character, out Rigidbody2D body, out Animator animator)
+        {
+            var root = new GameObject(character) { layer = LayerMask.NameToLayer("Hazard") };
+            AddSprite(root, character, "IdleDown", "Player", 5);
+            animator = AddAnimator(root, character);
+
+            body = root.AddComponent<Rigidbody2D>();
+            body.interpolation = RigidbodyInterpolation2D.Interpolate;
+
+            var hitArea = root.AddComponent<CircleCollider2D>();
+            hitArea.isTrigger = true;
+            hitArea.radius = 0.4f;
+
+            root.AddComponent<Hazard>();
+            return root;
+        }
+
+        // Placa de agujeros de la que salen pinchos cada cierto tiempo.
+        private static void BuildSpikeTrapPrefab()
+        {
+            var root = new GameObject("TrampaPinchos");
+            var sprite = root.AddComponent<SpriteRenderer>();
+            sprite.sprite = Piece(DungeonSheet, 5, 1);
+            sprite.sortingLayerName = "Traps";
+
+            // Algo más pequeña que el tile: como los pinchos pintados, hay que pisarla de verdad.
+            var box = root.AddComponent<BoxCollider2D>();
+            box.isTrigger = true;
+            box.size = new Vector2(0.6f, 0.6f);
+
+            root.AddComponent<Hazard>();
+            SetFields(root.AddComponent<TimedHazard>(), ("_collider", box), ("_sprite", sprite),
+                ("_onSprite", Piece(DungeonSheet, 4, 1)), ("_offSprite", Piece(DungeonSheet, 5, 1)));
+            SavePrefab(root, SpikeTrapPrefabPath);
         }
 
         // Rectángulo anclado arriba a la izquierda.
@@ -803,6 +896,39 @@ namespace TopDown.Editor
 
             Spawn(CheckpointPrefabPath, new Vector2(22.5f, 19f)); // antes del pasillo de pinchos
             Spawn(GoalPrefabPath, new Vector2(44.5f, 22.5f));
+
+            // Slime que cruza el camino de subida de un lado a otro.
+            GameObject enemy = Spawn(EnemyPrefabPath, new Vector2(18.5f, 8.5f));
+            SetValues(enemy.GetComponent<PathMover>(), ("_points", new[] { new Vector2(6f, 0f) }));
+
+            // Bestia que vigila la moneda escondida tras las rocas.
+            Spawn(ChaserPrefabPath, new Vector2(36.5f, 8.5f));
+
+            // Al final del pasillo, una columna de trampas que se encienden en ola de abajo arriba.
+            for (int y = 18; y <= 23; y++)
+            {
+                GameObject trap = Spawn(SpikeTrapPrefabPath, new Vector2(38.5f, y + 0.5f));
+                SetValues(trap.GetComponent<TimedHazard>(), ("_startDelay", (y - 18) * 0.25f));
+            }
+        }
+
+        // Cambia valores (no referencias) de un componente de la escena.
+        private static void SetValues(Object target, params (string Name, object Value)[] fields)
+        {
+            var serialized = new SerializedObject(target);
+            foreach (var (fieldName, value) in fields)
+            {
+                SerializedProperty property = serialized.FindProperty(fieldName);
+                switch (value)
+                {
+                    case float number: property.floatValue = number; break;
+                    case Vector2[] points:
+                        property.arraySize = points.Length;
+                        for (int i = 0; i < points.Length; i++) property.GetArrayElementAtIndex(i).vector2Value = points[i];
+                        break;
+                }
+            }
+            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         // Fila de árboles de 2×2 alrededor de todo el nivel para que el jugador no se salga.

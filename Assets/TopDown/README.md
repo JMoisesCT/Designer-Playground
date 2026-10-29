@@ -1,8 +1,8 @@
 # Tutorial: tu primer nivel visto desde arriba
 
-En este tutorial vas a crear un nivel de un juego visto desde arriba (*top-down*), **sin escribir código**: dibujas el prado y los caminos, colocas árboles, rocas, pinchos, monedas y banderas, eliges dónde está el cofre del final, ajustas al personaje, pones límites a la cámara, cambias la música y lo pruebas.
+En este tutorial vas a crear un nivel de un juego visto desde arriba (*top-down*), **sin escribir código**: dibujas el prado y los caminos, colocas árboles, rocas, pinchos, monedas, banderas, enemigos y trampas, eliges dónde está el cofre del final, ajustas al personaje, pones límites a la cámara, cambias la música y lo pruebas.
 
-Tiempo: unos 40 minutos.
+Tiempo: unos 55 minutos.
 
 ---
 
@@ -32,9 +32,11 @@ Abre el proyecto desde **Unity Hub**. Estas son las partes de la ventana que vas
 | Moverse (8 direcciones) | `W` `A` `S` `D` o flechas | Stick izquierdo o cruceta |
 
 3. Sigue el camino y recoge las monedas (el contador está arriba a la izquierda, debajo de los corazones). Hay un **claro escondido** en el bosque: busca la entrada.
-4. Toca la **bandera** antes del pasillo de pinchos: se pone roja. Cruza el pasillo en zigzag. Cada pincho que pisas te quita un **corazón** y parpadeas un momento (mientras parpadeas no pierdes más). Sin corazones, vuelves a la bandera.
-5. Choca con el **cofre** del final para terminar el nivel.
-6. Pulsa **Play** otra vez para salir.
+4. En la subida, un **slime** cruza el camino de lado a lado: pasa cuando no esté. Si te toca, pierdes un **corazón** y parpadeas un momento (mientras parpadeas no pierdes más).
+5. Abajo a la derecha, una **bestia** vigila la moneda que hay detrás de las rocas. Si te acercas, ¡te persigue! Aléjate y vuelve a su sitio.
+6. Toca la **bandera** antes del pasillo de pinchos: se pone roja. Cruza el pasillo en zigzag. Al final, unos **pinchos salen y se esconden** en ola: espera tu momento. Sin corazones, vuelves a la bandera.
+7. Choca con el **cofre** del final para terminar el nivel.
+8. Pulsa **Play** otra vez para salir.
 
 > ⚠️ **Muy importante:** lo que cambies **mientras está en Play** se pierde al salir. Sal siempre de Play antes de editar.
 
@@ -127,7 +129,57 @@ Los objetos listos para usar están en `Assets/TopDown/Prefabs/`. **Arrástralos
 
 ---
 
-## 5. Ajusta al personaje
+## 5. Enemigos y trampas
+
+También están en `Assets/TopDown/Prefabs/`. Todos quitan **un corazón** al tocarlos (lo cambias en *Hazard → Damage*).
+
+| Prefab | Qué hace |
+|---|---|
+| **Enemigo** | Un slime que recorre una **ruta** una y otra vez. Atraviesa árboles y rocas: va justo por donde dibujes la ruta. |
+| **Perseguidor** | Una bestia que vigila una **zona** (el círculo rojo). Si entras, te persigue; si sales, vuelve a su sitio. Choca con árboles y rocas: rodéalos para escapar. |
+| **TrampaPinchos** | Una placa con agujeros de la que **salen pinchos** cada cierto tiempo. Solo hace daño con los pinchos fuera. |
+
+### La ruta del Enemigo
+
+Selecciona el Enemigo. En la vista Scene aparece su ruta: una **línea amarilla** con **círculos numerados**.
+
+1. **Arrastra los círculos** para cambiar por dónde pasa.
+2. Pulsa **Añadir punto** (en el Inspector, debajo de *Path Mover*) para alargar la ruta. El punto nuevo sale 2 tiles a la derecha del último: arrástralo a su sitio.
+3. Para quitar un punto: en la lista **Points**, clic derecho sobre él → *Delete Array Element*.
+
+La ruta va pegada al enemigo: si lo mueves, la ruta se mueve con él.
+
+| Valor (*Path Mover*) | Qué cambia |
+|---|---|
+| **Speed** | Velocidad, en tiles por segundo. El jugador camina a 5. |
+| **Wait Time** | Segundos que se para en cada punto. |
+| **Loop** | Activado: del último punto vuelve directo al principio y da vueltas (un circuito). Desactivado: vuelve por el mismo camino. |
+
+### La zona del Perseguidor
+
+Selecciona el Perseguidor. El **círculo rojo** es la zona que vigila.
+
+| Valor (*Chaser Enemy*) | Qué cambia |
+|---|---|
+| **Sight Radius** | Tamaño del círculo rojo, en tiles. |
+| **Speed** | Velocidad, en tiles por segundo. Con menos de 5, el jugador siempre puede escapar corriendo. |
+| **Alert Sound** | Sonido al verte. |
+
+### Los tiempos de la TrampaPinchos
+
+| Valor (*Timed Hazard*) | Qué cambia |
+|---|---|
+| **On Time** | Segundos con los pinchos fuera. |
+| **Off Time** | Segundos con los pinchos escondidos: es cuando se puede pasar. |
+| **Start Delay** | Segundos que espera al empezar el nivel. |
+
+**Ola de pinchos:** pon varias trampas seguidas (con `Ctrl` mientras arrastras quedan justo en un tile) y dales *Start Delay* 0, 0.25, 0.5, 0.75... Los pinchos saldrán uno detrás de otro.
+
+**✏️ Prueba:** haz un camino estrecho entre árboles con un Enemigo que lo recorra de punta a punta, y una moneda en medio. ¿Cuánto *Wait Time* hace falta para que sea justo?
+
+---
+
+## 6. Ajusta al personaje
 
 Selecciona **Jugador** en la Hierarchy. En el Inspector:
 
@@ -142,7 +194,7 @@ Selecciona **Jugador** en la Hierarchy. En el Inspector:
 
 ---
 
-## 6. Límites de la cámara
+## 7. Límites de la cámara
 
 Al principio la cámara sigue al jugador a todas partes y, cerca del borde, enseña el negro de fuera del nivel. Cuando tu nivel esté casi terminado, ponle límites:
 
@@ -157,17 +209,17 @@ La cámara nunca enseña nada fuera del rectángulo.
 
 ---
 
-## 7. Cambia la música y los sonidos
+## 8. Cambia la música y los sonidos
 
 **Música:** en la Hierarchy, abre **Main Camera** y selecciona **Musica**. En el Inspector, arrastra otra canción al campo **Audio Resource**. Hay varias en `Assets/ThirdParty/NinjaAdventure/Audio/Musics/`. Con **Volume** la subes o bajas.
 
-**Sonidos:** cada objeto trae el suyo: golpe y derrota (*Hurt Sound* y *Death Sound* en el Jugador), moneda, bandera y cofre (**Sound**). Arrastra otro sonido desde `Assets/ThirdParty/NinjaAdventure/Audio/` o déjalo vacío para que no suene.
+**Sonidos:** cada objeto trae el suyo: golpe y derrota (*Hurt Sound* y *Death Sound* en el Jugador), moneda, bandera y cofre (**Sound**) y el aviso del Perseguidor al verte (*Alert Sound*). Arrastra otro sonido desde `Assets/ThirdParty/NinjaAdventure/Audio/` o déjalo vacío para que no suene.
 
 > **Truco:** haz clic en un sonido en la ventana Project y pulsa el botón ▶ de la parte de abajo del Inspector para escucharlo.
 
 ---
 
-## 8. Guarda
+## 9. Guarda
 
 `Ctrl + S`. Guarda a menudo.
 
@@ -180,8 +232,11 @@ La cámara nunca enseña nada fuera del rectángulo.
 3. **Campo de pinchos:** un campo de pinchos con un único camino seguro. ¿Se ve el camino o hay que descubrirlo?
 4. **Un solo corazón:** pon *Max Health* en 1 y diseña un nivel con banderas bien colocadas para que no sea injusto.
 5. **Contrarreloj:** sube *Move Speed* a 10 y diseña un nivel con pasillos estrechos. ¿Sigue siendo fácil de controlar?
-6. **La saga:** tres niveles encadenados con *Next Level*, cada uno más difícil que el anterior.
-7. **Intercambio:** juega el nivel de un compañero y dile dónde te perdiste y dónde perdiste más corazones.
+6. **La patrulla:** un Enemigo con *Loop* activado que da vueltas alrededor de un tesoro. Entra, coge la moneda y sal sin que te toque.
+7. **El guardián:** un Perseguidor que vigila el cofre. ¿Puedes usar árboles y rocas para despistarlo?
+8. **La ola:** un puente de TrampaPinchos con *Start Delay* distintos. Se tiene que poder cruzar, pero solo en el momento justo.
+9. **La saga:** tres niveles encadenados con *Next Level*, cada uno más difícil que el anterior.
+10. **Intercambio:** juega el nivel de un compañero y dile dónde te perdiste y dónde perdiste más corazones.
 
 ---
 
@@ -196,6 +251,10 @@ La cámara nunca enseña nada fuera del rectángulo.
 | No encuentro la paleta | *Window → 2D → Tile Palette* y elige **TopDown** en el desplegable. |
 | El jugador se sale del nivel | Hay un hueco en el borde: ciérralo con árboles o rocas en **Decorado**. |
 | Los pinchos no hacen daño | Píntalos con el tile **Pinchos** de la paleta. |
+| El Enemigo no se mueve | Su ruta no tiene puntos: pulsa **Añadir punto** en *Path Mover*. |
+| La ruta del Enemigo se ha movido | La ruta va pegada al enemigo: al mover el enemigo se mueve con él. Vuelve a arrastrar los círculos amarillos. |
+| No veo la ruta o el círculo rojo | Selecciona el enemigo y comprueba que el botón **Gizmos** de la barra de la vista Scene está activado. |
+| El Perseguidor se queda atascado | Choca con árboles y rocas y va en línea recta: si hay un obstáculo en medio, se queda detrás. Es un truco para escapar de él. |
 | La cámara no sigue al jugador | Usa el prefab **Jugador** (trae el tag *Player*). |
 | No veo los corazones ni el contador | Arrastra el prefab **Interfaz** a la escena (solo uno). Sin monedas en el nivel, el contador no aparece. |
 | El cofre no lleva al siguiente nivel | Arrastra la escena a *Next Level*. Para el juego exportado, añade todos los niveles en *File → Build Profiles → Scene List*. |
