@@ -48,6 +48,9 @@ namespace Shmup.Editor
         private const string HealthPickupPrefabPath = PrefabsFolder + "/Botiquin.prefab";
         private const string GoalPrefabPath = PrefabsFolder + "/Meta.prefab";
         private const string HudPrefabPath = PrefabsFolder + "/Interfaz.prefab";
+        private const string GrenadePrefabPath = PrefabsFolder + "/Granada.prefab";
+        private const string GrenadierPrefabPath = PrefabsFolder + "/EnemigoGranadero.prefab";
+        private const string BoosterPrefabPath = PrefabsFolder + "/Potenciador.prefab";
 
         // Sonidos: Kenney Digital SFX y, para explosiones y música, Ninja Adventure (el alumno puede cambiarlos en el Inspector).
         private const string Sfx = "Assets/ThirdParty/Kenney/Audio_DigitalSFX/Audio";
@@ -375,6 +378,7 @@ namespace Shmup.Editor
                 BuildBulletPrefab(PlayerBulletPrefabPath, Piece(TileSheet, 0, 0), "Player", true, 18f);
                 BuildBulletPrefab(EnemyBulletPrefabPath, Piece(TileSheet, 6, 1), "Hazard", false, 7f);
                 BuildExplosionPrefab();
+                BuildGrenadePrefab();
                 BuildPlayerPrefab();
                 BuildEnemyPrefabs();
                 BuildPickupPrefab(WeaponPickupPrefabPath, Piece(TileSheet, 1, 2), Pickup.PickupKind.Weapon);
@@ -418,6 +422,18 @@ namespace Shmup.Editor
             AddTriggerBody(root, 0.25f, out _);
             SetValues(root.AddComponent<Bullet>(), ("_fromPlayer", fromPlayer), ("_speed", speed));
             SavePrefab(root, path);
+        }
+
+        // Bomba naranja (3,0) lenta que estalla en 8 balas enemigas.
+        private static void BuildGrenadePrefab()
+        {
+            var root = new GameObject("Granada") { layer = LayerMask.NameToLayer("Hazard") };
+            AddSprite(root, Piece(TileSheet, 3, 0), "Player", 6);
+            AddTriggerBody(root, 0.3f, out _);
+            SetValues(root.AddComponent<Bullet>(), ("_fromPlayer", false), ("_speed", 4f));
+            SetFields(root.AddComponent<Grenade>(), ("_fragmentPrefab", LoadPrefab<Bullet>(EnemyBulletPrefabPath)),
+                ("_explosion", LoadPrefab<Transform>(ExplosionPrefabPath).gameObject), ("_sound", LoadSound(ExplosionSound)));
+            SavePrefab(root, GrenadePrefabPath);
         }
 
         private static void BuildExplosionPrefab()
@@ -482,6 +498,19 @@ namespace Shmup.Editor
             AddShooter(boss, 1.3f, 5, 60f);
             SetFields(boss.GetComponent<Enemy>(), ("_deathSound", LoadSound(BigExplosionSound)));
             SavePrefab(boss, BossPrefabPath);
+
+            // Nave grande verde: lenta y resistente, lanza granadas que estallan cerca del jugador.
+            GameObject grenadier = NewEnemy("EnemigoGranadero", Piece(ShipSheet, 2, 0), 0.8f, 6, 600);
+            SetValues(grenadier.AddComponent<EnemyMover>(), ("_speed", 2f));
+            AddShooter(grenadier, 2.5f, 1, 0f, GrenadePrefabPath);
+            SavePrefab(grenadier, GrenadierPrefabPath);
+
+            // Avioneta amarilla de apoyo: se queda en pantalla y potencia (en morado) a los enemigos de su alrededor hasta que la destruyan.
+            GameObject booster = NewEnemy("Potenciador", Piece(ShipSheet, 3, 1), 0.6f, 6, 800);
+            SetValues(booster.AddComponent<EnemyMover>(), ("_speed", 3f), ("_waveHeight", 2f), ("_waveTime", 3f),
+                ("_stayOnScreen", true), ("_screenDistance", 2f));
+            booster.AddComponent<EnemyBooster>();
+            SavePrefab(booster, BoosterPrefabPath);
         }
 
         // Lo común a los enemigos: dibujo, zona de golpe y vida.
@@ -499,10 +528,10 @@ namespace Shmup.Editor
             return root;
         }
 
-        private static void AddShooter(GameObject root, float interval, int bullets, float spread)
+        private static void AddShooter(GameObject root, float interval, int bullets, float spread, string bulletPath = EnemyBulletPrefabPath)
         {
             var shooter = root.AddComponent<EnemyShooter>();
-            SetFields(shooter, ("_bulletPrefab", LoadPrefab<Bullet>(EnemyBulletPrefabPath)), ("_shotSound", LoadSound(EnemyShotSound)));
+            SetFields(shooter, ("_bulletPrefab", LoadPrefab<Bullet>(bulletPath)), ("_shotSound", LoadSound(EnemyShotSound)));
             SetValues(shooter, ("_fireInterval", interval), ("_bulletCount", bullets), ("_spreadAngle", spread));
         }
 
@@ -712,9 +741,12 @@ namespace Shmup.Editor
             SpawnAll(TurretPrefabPath, (76, 3), (86, 4));
 
             // Oleada 4: ondulantes por arriba y dos tiradores que cierran el paso.
+            // Un Potenciador entra con ellos: hasta destruirlo, los de su alrededor van más rápido y disparan el doble.
             SpawnAll(WaveEnemyPrefabPath, (92, 10), (94, 10), (96, 10));
+            Spawn(BoosterPrefabPath, new Vector2(98f, 7f));
             SpawnAll(ShooterEnemyPrefabPath, (106, 3), (106, 11));
             Spawn(HealthPickupPrefabPath, new Vector2(112f, 7f));
+            Spawn(GrenadierPrefabPath, new Vector2(114f, 10f));          // lanza granadas que se fragmentan
 
             // Oleada 5: muro de enemigos con un hueco y torretas antes del jefe.
             SpawnAll(StraightEnemyPrefabPath, (120, 2), (120, 4), (120, 6), (120, 10), (120, 12));

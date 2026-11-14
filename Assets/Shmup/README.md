@@ -2,7 +2,7 @@
 
 En este tutorial vas a crear un nivel de un juego de disparos con naves (*shoot 'em up*), **sin escribir código**: dibujas las islas, colocas oleadas de enemigos, torretas y mejoras, eliges al jefe final, ajustas tu nave y lo pruebas.
 
-Tiempo: unos 45 minutos.
+Tiempo: unos 55 minutos.
 
 ---
 
@@ -35,8 +35,9 @@ Abre el proyecto desde **Unity Hub**. Estas son las partes de la ventana que vas
 3. La pantalla **avanza sola** hacia la derecha: tú solo te mueves dentro de ella.
 4. Cada enemigo destruido da **puntos** (arriba a la derecha). Si te dan, pierdes una **vida** (arriba a la izquierda) y parpadeas un momento: mientras parpadeas no pierdes más.
 5. Recoge la **P**: mejora tu arma (doble y luego triple). El **botiquín** te devuelve una vida.
-6. Al final, la pantalla se para y aparece el **jefe**. Destrúyelo para completar el nivel.
-7. Pulsa **Play** otra vez para salir.
+6. Cuidado con la **avioneta amarilla** que se queda en pantalla: es un **Potenciador** y los enemigos cercanos se ponen morados (disparan el doble). Después, una nave verde lanza **granadas** que estallan en círculo.
+7. Al final, la pantalla se para y aparece el **jefe**. Destrúyelo para completar el nivel.
+8. Pulsa **Play** otra vez para salir.
 
 > ⚠️ **Muy importante:** lo que cambies **mientras está en Play** se pierde al salir. Sal siempre de Play antes de editar.
 
@@ -114,6 +115,8 @@ Un enemigo **espera quieto** hasta que entra en pantalla. Así, cuanto más a la
 | **EnemigoTirador** | Nave lenta que te dispara. | 5 |
 | **Torreta** | Cañón fijo: no se mueve, pero te dispara. Ponla en una isla. | 4 |
 | **Jefe** | Nave enorme que se queda en pantalla hasta que la destruyas. | 100 |
+| **EnemigoGranadero** | Nave verde lenta que lanza **granadas**: vuelan despacio y, al rato, **estallan** en 8 balas en círculo. | 6 |
+| **Potenciador** | Avioneta amarilla de apoyo que se queda en pantalla. Mientras viva, los enemigos de su alrededor se ponen **morados**: disparan el doble de rápido y vuelan más deprisa. ¡Destrúyela primero! | 6 |
 
 **Oleadas:** coloca varios enemigos iguales en fila, en columna o en V. Con `Ctrl + D` duplicas el seleccionado, y con `Ctrl` mientras lo arrastras se mueve tile a tile.
 
@@ -140,7 +143,33 @@ Selecciona un enemigo. Al seleccionarlo, una **línea amarilla** enseña el cami
 
 **Que dispare cualquiera:** con un EnemigoRecto seleccionado, pulsa **Add Component**, elige *Enemy Shooter* y arrastra a **Bullet Prefab** la **BalaEnemiga** de `Assets/Shmup/Prefabs/`.
 
-**✏️ Prueba:** haz una V de cinco EnemigoRecto y, detrás, una fila de EnemigoOndulante con *Wave Height* distintos.
+### Granadas
+
+La **Granada** (en Prefabs) es una bala que estalla. Selecciónala para ver en **rojo** las direcciones de sus fragmentos:
+
+| Valor (*Grenade*) | Qué cambia |
+|---|---|
+| **Fuse Time** | Segundos que vuela hasta estallar |
+| **Fragment Count** | Balas que salen al estallar, repartidas en círculo |
+| **Fragment Prefab** | La bala de cada fragmento (por defecto, **BalaEnemiga**) |
+
+La velocidad de la granada es **Speed** en su *Bullet*. Para que cualquier enemigo lance granadas, arrastra la **Granada** a su **Bullet Prefab** (en *Enemy Shooter*).
+
+> **Granadas para tu nave:** duplica la Granada (`Ctrl + D` en Project), activa **From Player** en su *Bullet*, pon **BalaJugador** en *Fragment Prefab*, cambia su *Layer* (arriba del Inspector) a **Player** y arrástrala a **Bullet Prefab** del Jugador.
+
+### El Potenciador
+
+Al seleccionarlo verás un **círculo morado**: los enemigos que estén dentro (y ya en pantalla) quedan potenciados. Si lo destruyes, el efecto se acaba al instante.
+
+| Valor (*Enemy Booster*) | Qué cambia |
+|---|---|
+| **Radius** | Tamaño del círculo morado, en tiles |
+| **Fire Rate** | Cuánto más rápido disparan: 2 = el doble |
+| **Speed** | Cuánto más rápido vuelan: 1,5 = un 50 % más |
+
+Como tiene *Stay On Screen* activado, te acompaña hasta que lo derribes, ¡también contra el jefe!
+
+**✏️ Prueba:** haz una V de cinco EnemigoRecto y, detrás, una fila de EnemigoOndulante con *Wave Height* distintos. Después pon un Potenciador detrás de una Torreta: ¿cuál destruyes primero?
 
 ---
 
@@ -234,7 +263,9 @@ Para cambiar el ritmo del nivel, selecciona **Main Camera** y ajusta **Speed** e
 7. **Dos jefes:** ponlos con *Screen Distance* distintos para que no se pisen.
 8. **Una sola vida:** pon *Max Health* en 1 y diseña un nivel difícil pero justo. Los botiquines ya no sirven: ¿qué premios pondrías?
 9. **La saga:** tres niveles encadenados con *Next Level*, cada uno más rápido que el anterior.
-10. **Intercambio:** juega el nivel de un compañero y dile qué oleada fue la más divertida y dónde te pareció injusto.
+10. **Escolta:** un Jefe con dos Potenciadores. ¿Se puede ganar sin derribarlos antes?
+11. **Lluvia de metralla:** tres EnemigoGranadero con *Fragment Count* distintos. Prueba una granada que tarde más (*Fuse Time*).
+12. **Intercambio:** juega el nivel de un compañero y dile qué oleada fue la más divertida y dónde te pareció injusto.
 
 ---
 
@@ -257,4 +288,6 @@ Para cambiar el ritmo del nivel, selecciona **Main Camera** y ajusta **Speed** e
 | No veo las vidas ni los puntos | Arrastra el prefab **Interfaz** a la escena (solo uno). |
 | La Meta no lleva al siguiente nivel | Arrastra la escena a *Next Level*. Para el juego exportado, añade todos los niveles en *File → Build Profiles → Scene List*. |
 | No suena nada | Comprueba que el botón **Mute Audio** (el altavoz de la barra de la vista Game) no está activado. |
+| Los enemigos se ven morados y disparan muy rápido | Hay un **Potenciador** cerca: destrúyelo y vuelven a la normalidad. |
+| La granada no estalla | Le das antes con la nave (choca contigo) o sale de la pantalla antes de *Fuse Time*: bájalo. |
 | Cambié algo y se perdió | Lo cambiaste en Play. Sal de Play y vuelve a cambiarlo. |

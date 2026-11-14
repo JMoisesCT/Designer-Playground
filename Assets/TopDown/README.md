@@ -2,7 +2,7 @@
 
 En este tutorial vas a crear un nivel de un juego visto desde arriba (*top-down*), **sin escribir código**: dibujas el prado y los caminos, colocas árboles, rocas, pinchos, monedas, banderas, enemigos y trampas, eliges dónde está el cofre del final, ajustas al personaje, pones límites a la cámara, cambias la música y lo pruebas.
 
-Tiempo: unos 55 minutos.
+Tiempo: unos 75 minutos.
 
 ---
 
@@ -30,13 +30,17 @@ Abre el proyecto desde **Unity Hub**. Estas son las partes de la ventana que vas
 | Acción | Teclado | Mando |
 |---|---|---|
 | Moverse (8 direcciones) | `W` `A` `S` `D` o flechas | Stick izquierdo o cruceta |
+| Usar el pulso EMP (si lo llevas) | `E` | Botón de arriba (Y / △) |
 
 3. Sigue el camino y recoge las monedas (el contador está arriba a la izquierda, debajo de los corazones). Hay un **claro escondido** en el bosque: busca la entrada.
 4. En la subida, un **slime** cruza el camino de lado a lado: pasa cuando no esté. Si te toca, pierdes un **corazón** y parpadeas un momento (mientras parpadeas no pierdes más).
 5. Abajo a la derecha, una **bestia** vigila la moneda que hay detrás de las rocas. Si te acercas, ¡te persigue! Aléjate y vuelve a su sitio.
 6. Toca la **bandera** antes del pasillo de pinchos: se pone roja. Cruza el pasillo en zigzag. Al final, unos **pinchos salen y se esconden** en ola: espera tu momento. Sin corazones, vuelves a la bandera.
-7. Choca con el **cofre** del final para terminar el nivel.
-8. Pulsa **Play** otra vez para salir.
+7. Al final del pasillo hay una **puerta cerrada**: necesitas la **llave**, que está escondida en el claro del bosque.
+8. Tras la puerta, recoge el **pergamino del rayo** (pulso EMP). Para cruzar la **arena** (ahí vas despacio) entre los slimes, pulsa `E` cerca de ellos: se quedan paralizados y azules unos segundos.
+9. Abajo está el **teletransporte**: te lleva al otro lado de la muralla de pinos. Cuidado en el **hielo**: resbalas y hay pinchos. Una **calavera** te dispara bolas de fuego.
+10. El cofre está encerrado tras unos **bloques azules**. Empuja la **caja** sobre el **interruptor** rojo y déjala encima: los bloques desaparecen. Choca con el **cofre** para terminar.
+11. Pulsa **Play** otra vez para salir.
 
 > ⚠️ **Muy importante:** lo que cambies **mientras está en Play** se pierde al salir. Sal siempre de Play antes de editar.
 
@@ -58,7 +62,7 @@ Tu nivel ya trae un prado rodeado de árboles, con un camino hasta el cofre. Pue
 | `Jugador` | El personaje. |
 | `Cofre` | La meta: al chocar con él se termina el nivel. Muévelo al final de tu recorrido. |
 | `Main Camera` | La cámara. Sigue al jugador sola. Dentro lleva la **Musica**. |
-| `Interfaz` | Los corazones, el contador de monedas y el mensaje de "¡Nivel completado!". |
+| `Interfaz` | Los corazones, el contador de monedas, las llaves y el pulso EMP que lleves, y el mensaje de "¡Nivel completado!". |
 | `Global Light 2D` | La luz. **No la borres** o todo se verá negro. |
 
 ---
@@ -71,7 +75,7 @@ El nivel tiene **dos capas** que se pintan por separado. Antes de pintar, elige 
 
 | Fila de la paleta | Qué es | Active Tilemap |
 |---|---|---|
-| Arriba: **Pasto**, **Camino**, **Pinchos** | El suelo | **Suelo** |
+| Arriba: **Pasto**, **Camino**, **Pinchos**, **Hielo**, **Arena** | El suelo | **Suelo** |
 | Bloques grandes: **Árbol**, **Pino**, **Tocón**, **Roca**, **Roca gris** | Obstáculos de 2×2 tiles | **Decorado** |
 | Fila pequeña: arbusto, rocas pequeñas, tocón pequeño | Obstáculos de 1 tile | **Decorado** |
 | Abajo: girasol, flores, hierba | Adornos: se pueden pisar | **Decorado** |
@@ -84,6 +88,15 @@ El nivel tiene **dos capas** que se pintan por separado. Antes de pintar, elige 
 **El camino** pone sus bordes y esquinas **solo**: pinta de cualquier forma y el borde de pasto se ajusta. Para borrar un trozo de camino, pinta **Pasto** encima.
 
 **Los pinchos** quitan un corazón al pisarlos. Úsalos para hacer pasillos peligrosos o zonas que hay que cruzar con cuidado.
+
+**Suelos especiales** (también ponen sus bordes solos):
+
+| Tile | Qué hace |
+|---|---|
+| **Hielo** | Resbala: el personaje tarda en arrancar, frenar y girar. Con pinchos en medio, ¡cuidado! |
+| **Arena** | El personaje camina a la mitad de velocidad. Perfecta para zonas con enemigos. |
+
+> **Ajustarlos:** selecciona `Assets/TopDown/Art/Tiles/Hielo` (o `Arena`) en Project. Abajo del Inspector, **Speed Multiplier** = velocidad encima (1 = normal, 0,5 = la mitad) y **Slippery** = si resbala. El cambio vale en todos los niveles.
 
 **Herramientas** (con el ratón sobre la vista Scene):
 
@@ -122,6 +135,7 @@ Los objetos listos para usar están en `Assets/TopDown/Prefabs/`. **Arrástralos
 | **Next Level** | Arrastra aquí la escena del siguiente nivel (desde `Assets/TopDown/Scenes/`). Si lo dejas vacío, el nivel vuelve a empezar. |
 | **Message** | El texto que sale al llegar. |
 | **Delay** | Segundos que se ve el mensaje antes de cambiar de nivel. |
+| **Require All Coins** | Activado: el cofre no se abre hasta recoger **todas** las monedas (sale el mensaje *Locked Message*). |
 
 > **Truco:** `Ctrl + D` duplica el objeto seleccionado. Mantén `Ctrl` mientras lo arrastras para que se mueva tile a tile.
 
@@ -138,6 +152,7 @@ También están en `Assets/TopDown/Prefabs/`. Todos quitan **un corazón** al to
 | **Enemigo** | Un slime que recorre una **ruta** una y otra vez. Atraviesa árboles y rocas: va justo por donde dibujes la ruta. |
 | **Perseguidor** | Una bestia que vigila una **zona** (el círculo rojo). Si entras, te persigue; si sales, vuelve a su sitio. Choca con árboles y rocas: rodéalos para escapar. |
 | **TrampaPinchos** | Una placa con agujeros de la que **salen pinchos** cada cierto tiempo. Solo hace daño con los pinchos fuera. |
+| **Tirador** | Una calavera que te **dispara bolas de fuego** cuando estás cerca. Las bolas se rompen contra árboles, rocas y cajas: escóndete detrás. |
 
 ### La ruta del Enemigo
 
@@ -175,11 +190,67 @@ Selecciona el Perseguidor. El **círculo rojo** es la zona que vigila.
 
 **Ola de pinchos:** pon varias trampas seguidas (con `Ctrl` mientras arrastras quedan justo en un tile) y dales *Start Delay* 0, 0.25, 0.5, 0.75... Los pinchos saldrán uno detrás de otro.
 
+### El Tirador
+
+Se queda quieto mirando hacia abajo. Al seleccionarlo, el **círculo naranja** muestra hasta dónde ve: solo dispara si estás dentro. También tiene ruta (*Path Mover*, vacía): con **Añadir punto** patrulla mientras dispara.
+
+| Valor (*Enemy Shooter*) | Qué cambia |
+|---|---|
+| **Fire Interval** | Segundos entre disparos |
+| **Range** | Tamaño del círculo naranja |
+| **Projectile Count** | Bolas en cada disparo: con más de una salen en abanico |
+
+Para cambiar la velocidad o el daño de las bolas, abre el prefab **Proyectil** (*Speed*, *Damage*).
+
 **✏️ Prueba:** haz un camino estrecho entre árboles con un Enemigo que lo recorra de punta a punta, y una moneda en medio. ¿Cuánto *Wait Time* hace falta para que sea justo?
 
 ---
 
-## 6. Ajusta al personaje
+## 6. Puzles: llaves, interruptores, cajas y teletransportes
+
+También en `Assets/TopDown/Prefabs/`:
+
+| Prefab | Qué hace |
+|---|---|
+| **Llave** | Se recoge al tocarla (sale arriba a la izquierda). Cada llave abre **una** Puerta. |
+| **Puerta** | Bloquea el paso. Si llegas con una llave, se gasta y la puerta desaparece. |
+| **Interruptor** | Botón rojo en el suelo. Al pisarlo (tú o una caja) **enciende o apaga** los objetos de su lista. |
+| **Bloque** | Bloque azul sólido. Pensado para que un Interruptor lo quite. |
+| **Caja** | Se empuja caminando contra ella. Sirve para dejarla sobre un Interruptor y para protegerte de las bolas de fuego. |
+| **Teletransporte** | Círculo mágico: al pisar el centro, te lleva a su **salida**. |
+| **PulsoEMP** | Pergamino del rayo. Al recogerlo lo guardas (sale arriba a la izquierda) y lo usas **una vez** con `E`: los enemigos cercanos se quedan **paralizados** (azules) unos segundos y no hacen daño. |
+
+### El Interruptor
+
+1. Coloca el Interruptor y los objetos que quieres que cambie (por ejemplo, dos Bloques tapando un pasillo).
+2. Selecciona el Interruptor y **arrastra los objetos desde la Hierarchy** a la lista **Targets** del Inspector.
+3. En la escena verás **líneas celestes** del interruptor a cada objeto.
+
+Al pulsarlo, lo que estaba **encendido se apaga** (desaparece) y lo que estaba **apagado se enciende** (aparece). Así puedes quitar bloques, apagar trampas o hacer **aparecer** un puente o un teletransporte: desactívalo en la escena (la casilla junto a su nombre, arriba del Inspector) y ponlo en la lista.
+
+| Valor (*Switch*) | Qué cambia |
+|---|---|
+| **Targets** | Los objetos que cambia |
+| **Hold To Keep** | Activado: al quitarte (o quitar la caja), todo vuelve a como estaba. Desactivado: se queda pulsado para siempre |
+
+### El Teletransporte
+
+Al seleccionarlo verás una **línea morada** hasta su **salida** (círculo morado). **Arrastra el círculo** adonde quieras que lleve. Para ir y volver, pon **dos** teletransportes, cada uno con la salida **al lado** del otro (no encima, o rebotarías entre los dos).
+
+| Valor (*Teleporter*) | Qué cambia |
+|---|---|
+| **Exit Offset** | Dónde está la salida (lo cambia el círculo morado) |
+| **Affects Everything** | Activado: también lleva cajas y perseguidores (el perseguidor se queda vigilando al otro lado) |
+
+### El pulso EMP
+
+El alcance y la duración se ajustan en el **Jugador**, en *Player Items*: **Emp Radius** (círculo azul alrededor del jugador al seleccionarlo) y **Emp Duration** (segundos de parálisis). Solo se puede llevar uno a la vez.
+
+**✏️ Prueba:** encierra una moneda entre Bloques y pon un Interruptor lejos, con una Caja que haya que empujar hasta él. Después, esconde la Llave de una Puerta al otro lado de un Teletransporte.
+
+---
+
+## 7. Ajusta al personaje
 
 Selecciona **Jugador** en la Hierarchy. En el Inspector:
 
@@ -189,12 +260,13 @@ Selecciona **Jugador** en la Hierarchy. En el Inspector:
 | *Player Health* | **Max Health** | Corazones con los que empieza (de 1 a 10) |
 | *Player Health* | **Invulnerable Time** | Segundos sin recibir daño después de un golpe |
 | *Player Health* | **Restart Delay** | Segundos desde que pierde el último corazón hasta que reaparece |
+| *Player Items* | **Emp Radius**, **Emp Duration** | Alcance y duración del pulso EMP |
 
 **✏️ Prueba:** pon *Max Health* en 1. ¿Cómo cambia el pasillo de pinchos? ¿Y si pones *Invulnerable Time* en 3?
 
 ---
 
-## 7. Límites de la cámara
+## 8. Límites de la cámara
 
 Al principio la cámara sigue al jugador a todas partes y, cerca del borde, enseña el negro de fuera del nivel. Cuando tu nivel esté casi terminado, ponle límites:
 
@@ -209,7 +281,7 @@ La cámara nunca enseña nada fuera del rectángulo.
 
 ---
 
-## 8. Cambia la música y los sonidos
+## 9. Cambia la música y los sonidos
 
 **Música:** en la Hierarchy, abre **Main Camera** y selecciona **Musica**. En el Inspector, arrastra otra canción al campo **Audio Resource**. Hay varias en `Assets/ThirdParty/NinjaAdventure/Audio/Musics/`. Con **Volume** la subes o bajas.
 
@@ -219,7 +291,7 @@ La cámara nunca enseña nada fuera del rectángulo.
 
 ---
 
-## 9. Guarda
+## 10. Guarda
 
 `Ctrl + S`. Guarda a menudo.
 
@@ -236,7 +308,11 @@ La cámara nunca enseña nada fuera del rectángulo.
 7. **El guardián:** un Perseguidor que vigila el cofre. ¿Puedes usar árboles y rocas para despistarlo?
 8. **La ola:** un puente de TrampaPinchos con *Start Delay* distintos. Se tiene que poder cruzar, pero solo en el momento justo.
 9. **La saga:** tres niveles encadenados con *Next Level*, cada uno más difícil que el anterior.
-10. **Intercambio:** juega el nivel de un compañero y dile dónde te perdiste y dónde perdiste más corazones.
+10. **La caja fuerte:** el cofre encerrado entre Bloques, dos Interruptores con *Hold To Keep* y una sola Caja. ¿Cómo se abre?
+11. **Pista de hielo:** un lago de Hielo con pinchos y monedas en medio. Pon un Tirador en la orilla.
+12. **Paralizados:** un pasillo de Arena lleno de slimes que solo se cruza bien usando el PulsoEMP en el momento justo.
+13. **Portales:** un laberinto de Teletransportes donde solo uno lleva al cofre.
+14. **Intercambio:** juega el nivel de un compañero y dile dónde te perdiste y dónde perdiste más corazones.
 
 ---
 
@@ -261,4 +337,10 @@ La cámara nunca enseña nada fuera del rectángulo.
 | La cámara se para y el jugador se sale de la pantalla | El nivel es más grande que el rectángulo verde de la cámara: pulsa *Ajustar al terreno pintado* en *Main Camera*. |
 | No suena nada | Comprueba que el botón **Mute Audio** (el altavoz de la barra de la vista Game) no está activado. |
 | Al perder no vuelvo a la bandera | Tienes que tocarla primero (se pone roja). Al darle a Play de nuevo, el nivel siempre empieza desde el principio. |
+| El Interruptor no hace nada | Su lista **Targets** está vacía: arrastra ahí los objetos desde la Hierarchy. |
+| Al bajarme del Interruptor los bloques vuelven | Tiene *Hold To Keep* activado: deja una Caja encima, o desactívalo. |
+| El Teletransporte me lleva y me devuelve | Las salidas de dos teletransportes caen una encima del otro: aparta los círculos morados. |
+| La Puerta no se abre | Necesitas una Llave por puerta (mira el contador de llaves arriba a la izquierda). |
+| El pulso EMP no hace nada | Primero recoge el PulsoEMP; los enemigos tienen que estar dentro del círculo azul (*Emp Radius* del Jugador). |
+| El hielo o la arena no hacen nada | Píntalos en el Tilemap **Suelo** con los tiles **Hielo** y **Arena** de la paleta. |
 | Cambié algo y se perdió | Lo cambiaste en Play. Sal de Play y vuelve a cambiarlo. |

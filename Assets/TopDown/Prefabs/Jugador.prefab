@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 3455481922357056331}
   - component: {fileID: 7144585064718672747}
   - component: {fileID: 5715980514540012884}
+  - component: {fileID: 8278647835333105040}
   m_Layer: 8
   m_Name: Jugador
   m_TagString: Player
@@ -228,3 +229,19 @@ MonoBehaviour:
   _collider: {fileID: 3455481922357056331}
   _sprite: {fileID: 4162420121945493221}
   _animator: {fileID: 1143690293410967171}
+--- !u!114 &8278647835333105040
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4926698871480469848}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e9a722ccb3f0584b8eeee4a76afd7b1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TopDown::TopDown.PlayerItems
+  _empRadius: 5
+  _empDuration: 4
+  _empSound: {fileID: 8300000, guid: 3e06e4bdb51e65646a3275f1c588c10c, type: 3}
+  _useAction: {fileID: 1781555164194001046, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}

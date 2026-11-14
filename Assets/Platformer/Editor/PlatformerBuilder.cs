@@ -45,6 +45,11 @@ namespace Platformer.Editor
         private const string TrampolinePrefabPath = PrefabsFolder + "/Trampolin.prefab";
         private const string HudPrefabPath = PrefabsFolder + "/Interfaz.prefab";
         private const string CheckpointPrefabPath = PrefabsFolder + "/Bandera.prefab";
+        private const string ShooterPrefabPath = PrefabsFolder + "/EnemigoTirador.prefab";
+        private const string ProjectilePrefabPath = PrefabsFolder + "/Proyectil.prefab";
+        private const string FallingPlatformPrefabPath = PrefabsFolder + "/PlataformaQueCae.prefab";
+        private const string IciclePrefabPath = PrefabsFolder + "/Estalactita.prefab";
+        private const string DashRefillPrefabPath = PrefabsFolder + "/Recarga.prefab";
 
         // Sonidos de Kenney (el alumno puede cambiarlos en el Inspector de cada prefab).
         private const string Sfx = "Assets/ThirdParty/Kenney/Audio_DigitalSFX/Audio";
@@ -56,6 +61,18 @@ namespace Platformer.Editor
         private const string TrampolineSound = Sfx + "/phaserUp2.ogg";
         private const string CheckpointSound = Sfx + "/threeTone1.ogg";
         private const string GoalSound = Jingles + "/jingles_NES00.ogg";
+        private const string DashSound = Sfx + "/zap1.ogg";
+        private const string RefillSound = Sfx + "/powerUp2.ogg";
+        private const string ShotSound = Sfx + "/laser5.ogg";
+        private const string FallingPlatformSound = Sfx + "/lowRandom.ogg";
+        private const string IcicleFallSound = Sfx + "/phaserDown1.ogg";
+        private const string IcicleBreakSound = Sfx + "/spaceTrash2.ogg";
+        private const string CrumbleSound = Sfx + "/spaceTrash4.ogg";
+
+        private const string ProjectileSprite = Art + "/Traps/Sand Mud Ice/Ice Particle.png";
+        private const string IcicleSprite = Art + "/Traps/Spikes/Idle.png";
+        private const string ArrowSheet = Art + "/Traps/Arrow/Idle (18x18).png";
+        private static readonly Color IceColor = new(0.7f, 0.9f, 1f);
 
         private const string TerrainTilemapName = "Terreno";
 
@@ -68,6 +85,8 @@ namespace Platformer.Editor
         };
 
         private const string SpikesTileName = "Pinchos";
+        private const string CrumbleTileName = "Fragil";
+        private const string CrumbleTileSprite = "Terrain (16x16)_61"; // ladrillo rojo
 
         [MenuItem("Platformer/Crear nivel nuevo", priority = 0)]
         private static void CreateLevelFromMenu()
@@ -149,6 +168,18 @@ namespace Platformer.Editor
             BuildController("Trampolin",
                 BuildClip("Trampolin", "Idle", $"{trampoline}/Idle.png", false),
                 BuildClip("Trampolin", "Jump", $"{trampoline}/Jump (28x28).png", false));
+
+            string virtualGuy = Art + "/Main Characters/Virtual Guy";
+            BuildController("Tirador",
+                BuildClip("Tirador", "Idle", $"{virtualGuy}/Idle (32x32).png", true),
+                BuildClip("Tirador", "Hit", $"{virtualGuy}/Hit (32x32).png", false));
+
+            string falling = Art + "/Traps/Falling Platforms";
+            BuildController("PlataformaQueCae",
+                BuildClip("PlataformaQueCae", "On", $"{falling}/On (32x10).png", true),
+                BuildClip("PlataformaQueCae", "Off", $"{falling}/Off.png", false));
+
+            BuildController("Recarga", BuildClip("Recarga", "Idle", ArrowSheet, true));
 
             AssetDatabase.SaveAssets();
         }
@@ -241,6 +272,12 @@ namespace Platformer.Editor
             spikes.colliderType = Tile.ColliderType.Sprite;
             EditorUtility.SetDirty(spikes);
 
+            var crumble = GetOrCreateAsset<CrumbleTile>($"{TilesFolder}/{CrumbleTileName}.asset");
+            crumble.sprite = terrain.First(s => s.name == CrumbleTileSprite);
+            crumble.colliderType = Tile.ColliderType.Grid;
+            SetFields(crumble, ("_sound", LoadSound(CrumbleSound)));
+            EditorUtility.SetDirty(crumble);
+
             AssetDatabase.SaveAssets();
         }
 
@@ -304,6 +341,7 @@ namespace Platformer.Editor
                 tilemap.SetTile(new Vector3Int(i * 2, 0, 0), LoadTile(TerrainBlocks[i].Name));
             }
             tilemap.SetTile(new Vector3Int(TerrainBlocks.Length * 2, 0, 0), LoadTile(SpikesTileName));
+            tilemap.SetTile(new Vector3Int(TerrainBlocks.Length * 2 + 2, 0, 0), LoadTile(CrumbleTileName));
             PrefabUtility.SaveAsPrefabAsset(contents, PalettePath);
             PrefabUtility.UnloadPrefabContents(contents);
         }
@@ -326,6 +364,11 @@ namespace Platformer.Editor
                 BuildPlatformPrefab();
                 BuildTrampolinePrefab();
                 BuildCheckpointPrefab();
+                BuildProjectilePrefab();
+                BuildShooterPrefab();
+                BuildFallingPlatformPrefab();
+                BuildIciclePrefab();
+                BuildDashRefillPrefab();
                 BuildHudPrefab();
             }
             finally
@@ -364,7 +407,8 @@ namespace Platformer.Editor
             SetFields(controller,
                 ("_body", body), ("_sprite", sprite), ("_animator", animator),
                 ("_moveAction", FindAction(actions, "Move")), ("_jumpAction", FindAction(actions, "Jump")),
-                ("_jumpSound", LoadSound(JumpSound)));
+                ("_dashAction", FindAction(actions, "Sprint")),
+                ("_jumpSound", LoadSound(JumpSound)), ("_dashSound", LoadSound(DashSound)));
             var serializedController = new SerializedObject(controller);
             serializedController.FindProperty("_groundLayers").intValue = LayerMask.GetMask("Ground");
             serializedController.ApplyModifiedPropertiesWithoutUndo();
@@ -372,6 +416,7 @@ namespace Platformer.Editor
             var health = root.AddComponent<PlayerHealth>();
             SetFields(health, ("_controller", controller), ("_body", body), ("_collider", box), ("_animator", animator),
                 ("_deathSound", LoadSound(DeathSound)));
+            root.AddComponent<TileCrumbler>();
 
             SavePrefab(root, PlayerPrefabPath);
         }
@@ -522,6 +567,114 @@ namespace Platformer.Editor
             SavePrefab(root, TrampolinePrefabPath);
         }
 
+        // Bola de hielo: el dibujo de 16×16 px solo ocupa los 8×8 del centro.
+        private static void BuildProjectilePrefab()
+        {
+            var root = new GameObject("Proyectil") { layer = LayerMask.NameToLayer("Hazard") };
+            var sprite = root.AddComponent<SpriteRenderer>();
+            sprite.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(ProjectileSprite);
+            sprite.sortingLayerName = "Traps";
+            sprite.sortingOrder = 10;
+
+            // Dinámico sin gravedad: así su trigger detecta también el terreno (estático).
+            var body = root.AddComponent<Rigidbody2D>();
+            body.gravityScale = 0f;
+            body.interpolation = RigidbodyInterpolation2D.Interpolate;
+
+            var circle = root.AddComponent<CircleCollider2D>();
+            circle.isTrigger = true;
+            circle.radius = 0.25f;
+
+            SetFields(root.AddComponent<Projectile>(), ("_body", body));
+            SavePrefab(root, ProjectilePrefabPath);
+        }
+
+        // Enemigo quieto que mira al jugador y le dispara. Se le puede pisar como al Enemigo.
+        private static void BuildShooterPrefab()
+        {
+            var root = new GameObject("EnemigoTirador") { layer = LayerMask.NameToLayer("Hazard") };
+            SpriteRenderer sprite = AddSprite(root, "Tirador", "Idle", "Player", 5);
+            Animator animator = AddAnimator(root, "Tirador");
+
+            var box = root.AddComponent<BoxCollider2D>();
+            box.isTrigger = true;
+            box.size = new Vector2(0.9f, 1.5f);
+            box.offset = new Vector2(0f, -0.25f);
+
+            var enemy = root.AddComponent<StompableEnemy>();
+            SetFields(enemy, ("_collider", box), ("_animator", animator), ("_stompSound", LoadSound(StompSound)));
+
+            var shooter = root.AddComponent<EnemyShooter>();
+            SetFields(shooter, ("_projectilePrefab", AssetDatabase.LoadAssetAtPath<Projectile>(ProjectilePrefabPath)),
+                ("_sprite", sprite), ("_shotSound", LoadSound(ShotSound)));
+            SavePrefab(root, ShooterPrefabPath);
+        }
+
+        // Plataforma de 2 tiles que se atraviesa desde abajo; la barra de arriba del dibujo (32×10 px) es la superficie.
+        private static void BuildFallingPlatformPrefab()
+        {
+            var root = new GameObject("PlataformaQueCae") { layer = LayerMask.NameToLayer("Ground") };
+            SpriteRenderer sprite = AddSprite(root, "PlataformaQueCae", "On", "Traps", 0);
+            Animator animator = AddAnimator(root, "PlataformaQueCae");
+            Rigidbody2D body = AddKinematicBody(root);
+
+            var box = root.AddComponent<BoxCollider2D>();
+            box.size = new Vector2(2f, 0.25f);
+            box.offset = new Vector2(0f, 0.1875f);
+            box.usedByEffector = true;
+            root.AddComponent<PlatformEffector2D>().useOneWay = true;
+
+            var platform = root.AddComponent<FallingPlatform>();
+            SetFields(platform, ("_body", body), ("_collider", box), ("_sprite", sprite), ("_animator", animator),
+                ("_sound", LoadSound(FallingPlatformSound)));
+            SavePrefab(root, FallingPlatformPrefabPath);
+        }
+
+        // Pinchos girados y teñidos de celeste: cuelgan de la mitad de arriba del tile (se coloca justo bajo el techo).
+        private static void BuildIciclePrefab()
+        {
+            var root = new GameObject("Estalactita") { layer = LayerMask.NameToLayer("Hazard") };
+            var sprite = root.AddComponent<SpriteRenderer>();
+            sprite.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(IcicleSprite);
+            sprite.flipY = true;
+            sprite.color = IceColor;
+            sprite.sortingLayerName = "Traps";
+
+            // Dinámico sin gravedad hasta que cae: así su trigger detecta el suelo (estático).
+            var body = root.AddComponent<Rigidbody2D>();
+            body.gravityScale = 0f;
+            body.freezeRotation = true;
+            body.interpolation = RigidbodyInterpolation2D.Interpolate;
+
+            var box = root.AddComponent<BoxCollider2D>();
+            box.isTrigger = true;
+            box.size = new Vector2(0.8f, 0.4f);
+            box.offset = new Vector2(0f, 0.28f);
+
+            var icicle = root.AddComponent<Icicle>();
+            SetFields(icicle, ("_body", body), ("_fallSound", LoadSound(IcicleFallSound)), ("_breakSound", LoadSound(IcicleBreakSound)));
+            var serializedIcicle = new SerializedObject(icicle);
+            serializedIcicle.FindProperty("_groundLayers").intValue = LayerMask.GetMask("Ground");
+            serializedIcicle.ApplyModifiedPropertiesWithoutUndo();
+
+            root.AddComponent<Hazard>();
+            SavePrefab(root, IciclePrefabPath);
+        }
+
+        private static void BuildDashRefillPrefab()
+        {
+            var root = new GameObject("Recarga");
+            SpriteRenderer sprite = AddSprite(root, "Recarga", "Idle", "Traps", 5);
+            AddAnimator(root, "Recarga");
+
+            var circle = root.AddComponent<CircleCollider2D>();
+            circle.isTrigger = true;
+            circle.radius = 0.5f;
+
+            SetFields(root.AddComponent<DashRefill>(), ("_collider", circle), ("_sprite", sprite), ("_sound", LoadSound(RefillSound)));
+            SavePrefab(root, DashRefillPrefabPath);
+        }
+
         // Canvas con el contador de frutas y el mensaje central. Medidas en píxeles del juego (384×216).
         private static void BuildHudPrefab()
         {
@@ -558,8 +711,27 @@ namespace Platformer.Editor
             messageText.rectTransform.anchorMax = Vector2.one;
             messageText.rectTransform.offsetMin = messageText.rectTransform.offsetMax = Vector2.zero;
 
+            // Fila de iconos de dash bajo las frutas: LevelHud copia el primero por cada carga.
+            var dashRow = new GameObject("Dash", typeof(RectTransform));
+            var dashRect = (RectTransform)dashRow.transform;
+            dashRect.SetParent(root.transform, false);
+            dashRect.anchorMin = dashRect.anchorMax = dashRect.pivot = new Vector2(0f, 1f);
+            dashRect.anchoredPosition = new Vector2(8f, -30f);
+            dashRect.sizeDelta = new Vector2(100f, 14f);
+            var layout = dashRow.AddComponent<HorizontalLayoutGroup>();
+            layout.spacing = 2f;
+            layout.childControlWidth = layout.childControlHeight = false;
+            layout.childForceExpandWidth = layout.childForceExpandHeight = false;
+
+            var dashIcon = new GameObject("Carga", typeof(RectTransform)).AddComponent<Image>();
+            dashIcon.rectTransform.SetParent(dashRect, false);
+            dashIcon.rectTransform.sizeDelta = new Vector2(14f, 14f);
+            dashIcon.sprite = LoadFrames(ArrowSheet)[0];
+            dashIcon.raycastTarget = false;
+
             var hud = root.AddComponent<LevelHud>();
-            SetFields(hud, ("_fruitCounter", counter), ("_fruitText", fruitText), ("_messageText", messageText));
+            SetFields(hud, ("_fruitCounter", counter), ("_fruitText", fruitText), ("_messageText", messageText),
+                ("_dashIcon", dashIcon));
             SavePrefab(root, HudPrefabPath);
         }
 
@@ -653,8 +825,13 @@ namespace Platformer.Editor
                 var serializedCamera = new SerializedObject(cameraFollow);
                 serializedCamera.FindProperty("_useBounds").boolValue = true;
                 serializedCamera.FindProperty("_boundsMin").vector2Value = new Vector2(-14f, -4f);
-                serializedCamera.FindProperty("_boundsMax").vector2Value = new Vector2(109f, 16f);
+                serializedCamera.FindProperty("_boundsMax").vector2Value = new Vector2(175f, 16f);
                 serializedCamera.ApplyModifiedPropertiesWithoutUndo();
+
+                // El nivel de ejemplo enseña el dash: una carga, que se rellena con la Recarga.
+                var serializedPlayer = new SerializedObject(player.GetComponent<PlayerController>());
+                serializedPlayer.FindProperty("_dashCharges").intValue = 1;
+                serializedPlayer.ApplyModifiedPropertiesWithoutUndo();
             }
             PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(HudPrefabPath));
 
@@ -689,7 +866,14 @@ namespace Platformer.Editor
             // foso de 12 tiles (73..84): se cruza en la plataforma móvil
             Fill(terrain, grass, 85, 104, -4, -1);          // tercer suelo
             Fill(terrain, grass, 93, 104, 0, 6);            // acantilado: solo se sube con el trampolín
-            Fill(terrain, grass, 105, 108, -4, 13);         // pared final
+            // foso de 10 tiles (105..114): se cruza en plataformas que caen
+            Fill(terrain, grass, 115, 130, -4, 6);          // cueva con estalactitas
+            Fill(terrain, LoadTile("Tierra"), 115, 130, 11, 13);
+            Fill(terrain, LoadTile(CrumbleTileName), 131, 140, 6, 6); // puente de ladrillos frágiles
+            Fill(terrain, grass, 141, 150, -4, 6);          // enemigo tirador
+            // foso de 8 tiles (151..158): solo se cruza saltando y haciendo dash
+            Fill(terrain, grass, 159, 170, -4, 6);
+            Fill(terrain, grass, 171, 174, -4, 13);         // pared final
         }
 
         private static void SpawnExampleObjects()
@@ -702,7 +886,17 @@ namespace Platformer.Editor
             Spawn(CheckpointPrefabPath, new Vector2(70f, 2f));              // antes del foso de la plataforma móvil
             Spawn(PlatformPrefabPath, new Vector2(75f, -0.25f), new Vector2(8f, 0f));
             Spawn(TrampolinePrefabPath, new Vector2(89.5f, 0.875f));
-            Spawn(GoalPrefabPath, new Vector2(99f, 9f));
+            Spawn(CheckpointPrefabPath, new Vector2(101f, 9f));             // en lo alto del acantilado
+
+            // La superficie de la plataforma que cae queda 0,3125 por encima de su centro: arriba a la altura 7.
+            Spawn(FallingPlatformPrefabPath, new Vector2(107f, 6.6875f));
+            Spawn(FallingPlatformPrefabPath, new Vector2(111f, 6.6875f));
+            Spawn(IciclePrefabPath, new Vector2(118.5f, 10.5f));
+            Spawn(IciclePrefabPath, new Vector2(122.5f, 10.5f));
+            Spawn(IciclePrefabPath, new Vector2(126.5f, 10.5f));
+            Spawn(ShooterPrefabPath, new Vector2(147.5f, 8f));
+            Spawn(DashRefillPrefabPath, new Vector2(149.5f, 8.5f));
+            Spawn(GoalPrefabPath, new Vector2(166f, 9f));
 
             SpawnFruit(Fruit.Kind.Apple, new Vector2(8.5f, 3f));
             SpawnFruit(Fruit.Kind.Apple, new Vector2(14.5f, 4f));
@@ -712,6 +906,8 @@ namespace Platformer.Editor
             SpawnFruit(Fruit.Kind.Kiwi, new Vector2(79f, 2f));
             SpawnFruit(Fruit.Kind.Melon, new Vector2(89.5f, 5f));
             SpawnFruit(Fruit.Kind.Pineapple, new Vector2(96f, 8f));
+            SpawnFruit(Fruit.Kind.Orange, new Vector2(122.5f, 8f));         // bajo una estalactita: hay que pasar rápido
+            SpawnFruit(Fruit.Kind.Apple, new Vector2(155f, 9f));            // en mitad del salto con dash
         }
 
         private static void SpawnFruit(Fruit.Kind kind, Vector2 position)

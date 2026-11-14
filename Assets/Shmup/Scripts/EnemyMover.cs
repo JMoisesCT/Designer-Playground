@@ -39,7 +39,7 @@ namespace Shmup
         {
             if (!_enemy.IsActive) return;
 
-            _center += (Vector2)transform.up * (_speed * Time.deltaTime);
+            _center += (Vector2)transform.up * (_speed * _enemy.SpeedMultiplier * Time.deltaTime);
             if (_stayOnScreen) _center.x = Mathf.Max(_center.x, CameraView.RightEdge - _screenDistance);
 
             _waveClock += Time.deltaTime;

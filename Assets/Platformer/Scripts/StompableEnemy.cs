@@ -48,6 +48,7 @@ namespace Platformer
         {
             _collider.enabled = false;
             if (_mover != null) _mover.enabled = false;
+            if (TryGetComponent(out EnemyShooter shooter)) shooter.enabled = false;
             if (_animator != null) _animator.Play(HitState);
             Sound.Play(_stompSound);
             Destroy(gameObject, 0.4f);

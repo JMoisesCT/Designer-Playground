@@ -32,10 +32,37 @@ namespace Shmup
         [SerializeField] private SpriteRenderer _sprite;
         [SerializeField] private GameObject _explosion;
 
+        private const float BoostLinger = 0.2f;   // segundos que dura el potenciador tras alejarse
+        private static readonly Color BoostColor = new(1f, 0.55f, 1f);
+
+        private Color _baseColor;
+        private bool _flashing;
+        private float _boostedUntil = -1f;
+        private float _boostFireRate = 1f;
+        private float _boostSpeed = 1f;
+
         public bool IsActive { get; private set; }
+        public bool IsBoosted => Time.time < _boostedUntil;
+        public float FireRateMultiplier => IsBoosted ? _boostFireRate : 1f;
+        public float SpeedMultiplier => IsBoosted ? _boostSpeed : 1f;
+
+        private void Awake()
+        {
+            _baseColor = _sprite.color;
+        }
+
+        // Lo llama un Potenciador cercano en cada frame.
+        public void Boost(float fireRate, float speed)
+        {
+            _boostedUntil = Time.time + BoostLinger;
+            _boostFireRate = fireRate;
+            _boostSpeed = speed;
+        }
 
         private void Update()
         {
+            if (!_flashing) _sprite.color = IsBoosted ? BoostColor : _baseColor;
+
             if (!IsActive)
             {
                 IsActive = CameraView.Contains(transform.position, WakeMargin);
@@ -70,9 +97,10 @@ namespace Shmup
 
         private IEnumerator Flash()
         {
+            _flashing = true;
             _sprite.color = Color.red;
             yield return new WaitForSeconds(FlashTime);
-            _sprite.color = Color.white;
+            _flashing = false;
         }
 
         private void OnTriggerStay2D(Collider2D other)

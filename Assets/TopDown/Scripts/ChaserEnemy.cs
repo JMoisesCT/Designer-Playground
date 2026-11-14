@@ -48,6 +48,12 @@ namespace TopDown
             _body.linearVelocity = (next - _body.position) / Time.fixedDeltaTime;
         }
 
+        // Cambia el sitio que vigila (al pasar por un teletransporte).
+        public void MoveHome(Vector2 position)
+        {
+            _home = position;
+        }
+
         private void OnValidate()
         {
             if (_body == null) Debug.LogWarning($"[{name}] {nameof(ChaserEnemy)}: falta el Rigidbody2D.", this);

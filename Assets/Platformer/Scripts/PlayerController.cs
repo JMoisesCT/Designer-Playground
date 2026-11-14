@@ -12,6 +12,7 @@ namespace Platformer
         private const float JumpCutMultiplier = 0.5f;
         private const float MaxFallSpeed = 20f;
         private const float BounceGraceTime = 0.1f; // tras rebotar, sigue contando como pisotón (dos enemigos juntos)
+        private const float DashDuration = 0.15f;
 
         private static readonly int IdleState = Animator.StringToHash("Idle");
         private static readonly int RunState = Animator.StringToHash("Run");
@@ -32,9 +33,22 @@ namespace Platformer
         [Tooltip("Permite saltar otra vez en el aire. Pisar a un enemigo o un trampolín lo recarga.")]
         [SerializeField] private bool _doubleJump;
 
+        [Header("Dash (Shift)")]
+        [Tooltip("Cargas de dash: impulso rápido hacia donde mira el personaje. 0 = sin dash. El objeto Recarga las rellena.")]
+        [SerializeField, Range(0, 5)] private int _dashCharges;
+
+        [Tooltip("Distancia del dash, en tiles. La línea celeste la muestra en la escena.")]
+        [SerializeField, Range(1f, 10f)] private float _dashDistance = 4f;
+
+        [Tooltip("Segundos para recuperar una carga sola. 0 = solo se recarga con el objeto Recarga.")]
+        [SerializeField, Range(0f, 10f)] private float _dashRechargeTime;
+
         [Header("Sonido")]
         [Tooltip("Sonido al saltar. Déjalo vacío para que no suene.")]
         [SerializeField] private AudioClip _jumpSound;
+
+        [Tooltip("Sonido del dash. Déjalo vacío para que no suene.")]
+        [SerializeField] private AudioClip _dashSound;
 
         [Header("Referencias")]
         [SerializeField] private Rigidbody2D _body;
@@ -42,6 +56,7 @@ namespace Platformer
         [SerializeField] private Animator _animator;
         [SerializeField] private InputActionReference _moveAction;
         [SerializeField] private InputActionReference _jumpAction;
+        [SerializeField] private InputActionReference _dashAction;
 
         [Tooltip("Capas que cuentan como suelo.")]
         [SerializeField] private LayerMask _groundLayers;
@@ -56,28 +71,39 @@ namespace Platformer
         private float _jumpBufferTimer;
         private int _currentState;
         private float _lastBounceTime = -1f;
+        private bool _dashHeld;
+        private bool _dashRequested;
+        private float _dashTimer;
+        private float _dashDirection;
+        private float _rechargeTimer;
 
         public bool IsGrounded { get; private set; }
         public bool JustBounced => Time.time - _lastBounceTime < BounceGraceTime;
         public float Gravity => _gravity;
+        public int DashCharges { get; private set; }
+        public int MaxDashCharges => _dashCharges;
 
         private void Awake()
         {
             // Solo cuenta como suelo lo que se toca por debajo (normal entre 45° y 135°).
             _groundFilter.SetLayerMask(_groundLayers);
             _groundFilter.SetNormalAngle(45f, 135f);
+            DashCharges = _dashCharges;
         }
 
         private void OnEnable()
         {
             _moveAction.action.Enable();
             _jumpAction.action.Enable();
+            if (_dashAction != null) _dashAction.action.Enable();
         }
 
         private void OnDisable()
         {
             _moveInput = 0f;
             _jumpHeld = false;
+            _dashTimer = 0f;
+            _body.gravityScale = _gravity; // por si se desactiva en mitad de un dash
         }
 
         private void Update()
@@ -87,14 +113,54 @@ namespace Platformer
             if (jumpPressed && !_jumpHeld) _jumpBufferTimer = JumpBufferTime;
             _jumpHeld = jumpPressed;
 
-            if (_moveInput != 0f) _sprite.flipX = _moveInput < 0f;
+            bool dashPressed = _dashAction != null && _dashAction.action.IsPressed();
+            if (dashPressed && !_dashHeld && DashCharges > 0 && _dashTimer <= 0f) _dashRequested = true;
+            _dashHeld = dashPressed;
+
+            if (_moveInput != 0f && _dashTimer <= 0f) _sprite.flipX = _moveInput < 0f;
+            RechargeDash();
             UpdateAnimation();
+        }
+
+        // Rellena todas las cargas de dash (objeto Recarga).
+        public void RefillDash()
+        {
+            DashCharges = _dashCharges;
+            _rechargeTimer = 0f;
+        }
+
+        private void RechargeDash()
+        {
+            if (_dashRechargeTime <= 0f || DashCharges >= _dashCharges) return;
+            _rechargeTimer += Time.deltaTime;
+            if (_rechargeTimer < _dashRechargeTime) return;
+            _rechargeTimer = 0f;
+            DashCharges++;
         }
 
         private void FixedUpdate()
         {
             float dt = Time.fixedDeltaTime;
             _body.gravityScale = _gravity;
+
+            // Dash: recto hacia donde mira, sin gravedad, durante un instante.
+            if (_dashRequested)
+            {
+                _dashRequested = false;
+                DashCharges--;
+                _dashTimer = DashDuration;
+                _dashDirection = _sprite.flipX ? -1f : 1f;
+                _isJumping = false;
+                Sound.Play(_dashSound);
+            }
+            if (_dashTimer > 0f)
+            {
+                _dashTimer -= dt;
+                _body.gravityScale = 0f;
+                _body.linearVelocity = new Vector2(_dashDirection * _dashDistance / DashDuration, 0f);
+                return;
+            }
+
             Vector2 velocity = _body.linearVelocity;
 
             // Encima de una plataforma móvil, el jugador se mueve con ella.
@@ -164,7 +230,8 @@ namespace Platformer
         private void UpdateAnimation()
         {
             int state;
-            if (!IsGrounded && _body.linearVelocity.y > 0f) state = _usedDoubleJump ? DoubleJumpState : JumpState;
+            if (_dashTimer > 0f) state = DoubleJumpState; // el giro del doble salto sirve de animación del dash
+            else if (!IsGrounded && _body.linearVelocity.y > 0f) state = _usedDoubleJump ? DoubleJumpState : JumpState;
             else if (!IsGrounded) state = FallState;
             else state = Mathf.Abs(_moveInput) > 0.01f ? RunState : IdleState;
 
@@ -177,8 +244,8 @@ namespace Platformer
         {
             if (_body == null || _sprite == null || _animator == null)
                 Debug.LogWarning($"[{name}] {nameof(PlayerController)}: faltan referencias (Rigidbody2D, SpriteRenderer o Animator).", this);
-            if (_moveAction == null || _jumpAction == null)
-                Debug.LogWarning($"[{name}] {nameof(PlayerController)}: faltan las acciones de mover o saltar.", this);
+            if (_moveAction == null || _jumpAction == null || _dashAction == null)
+                Debug.LogWarning($"[{name}] {nameof(PlayerController)}: faltan las acciones de mover, saltar o dash.", this);
         }
 
         // Dibuja el arco del salto más largo posible: así se ve qué huecos y alturas se pueden superar.
@@ -212,6 +279,17 @@ namespace Platformer
                 }
                 height *= 2f;
                 label += $"\nDoble salto: {height:0.0} de alto, {_moveSpeed * (apexTime + secondTime):0.0} de largo";
+            }
+
+            // Dash: línea celeste con su distancia a cada lado.
+            if (_dashCharges > 0)
+            {
+                Vector2 center = feet + Vector2.up * 0.75f;
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawLine(center + Vector2.left * _dashDistance, center + Vector2.right * _dashDistance);
+                Gizmos.DrawWireSphere(center + Vector2.left * _dashDistance, 0.2f);
+                Gizmos.DrawWireSphere(center + Vector2.right * _dashDistance, 0.2f);
+                label += $"\nDash: {_dashDistance:0.#} tiles ({_dashCharges} cargas)";
             }
 
 #if UNITY_EDITOR

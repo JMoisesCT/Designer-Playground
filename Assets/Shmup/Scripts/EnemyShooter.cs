@@ -43,7 +43,7 @@ namespace Shmup
         {
             if (!_enemy.IsActive || !CameraView.Contains(transform.position, 0f)) return;
 
-            _timer -= Time.deltaTime;
+            _timer -= Time.deltaTime * _enemy.FireRateMultiplier; // potenciado, dispara más a menudo
             if (_timer > 0f) return;
 
             _timer = _fireInterval;

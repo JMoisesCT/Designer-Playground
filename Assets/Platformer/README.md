@@ -2,7 +2,7 @@
 
 En este tutorial vas a crear un nivel de plataformas **sin escribir código**: dibujas el escenario, colocas enemigos, trampas, frutas y banderas, ajustas cómo salta el personaje, pones límites a la cámara, cambias los sonidos y lo pruebas.
 
-Tiempo: unos 45 minutos.
+Tiempo: unos 60 minutos.
 
 ---
 
@@ -31,10 +31,12 @@ Abre el proyecto desde **Unity Hub**. Estas son las partes de la ventana que vas
 |---|---|---|
 | Moverse | `A` `D` o flechas | Stick izquierdo o cruceta |
 | Saltar | `Espacio` (mantén para saltar más alto) | Botón de abajo (A / ✕) |
+| Dash (impulso rápido hacia delante) | `Shift` izquierdo | Pulsar el stick izquierdo |
 
 3. Prueba a saltar encima de un enemigo: desaparece y rebotas. Si lo tocas de lado, o tocas los pinchos o la sierra, mueres y el nivel vuelve a empezar.
-4. Recoge las frutas (el contador está arriba a la izquierda), toca la bandera antes del foso grande (si mueres, vuelves a ella), cruza el foso en la plataforma que se mueve, sube al acantilado con el trampolín y toca el trofeo para terminar el nivel.
-5. Pulsa **Play** otra vez para salir.
+4. Recoge las frutas (el contador está arriba a la izquierda), toca la bandera antes del foso grande (si mueres, vuelves a ella), cruza el foso en la plataforma que se mueve y sube al acantilado con el trampolín.
+5. Sigue: cruza las plataformas que caen, pasa rápido bajo las estalactitas de la cueva, corre por el puente de ladrillos que se rompe, esquiva las bolas de hielo del tirador y salta el último foso con **salto + dash** (el icono de la flecha, arriba a la izquierda, es tu carga de dash; la flecha del suelo la rellena). Toca el trofeo para terminar.
+6. Pulsa **Play** otra vez para salir.
 
 > ⚠️ **Muy importante:** lo que cambies **mientras está en Play** se pierde al salir. Sal siempre de Play antes de editar.
 
@@ -74,6 +76,9 @@ Al crear el nivel se abrió la ventana **Tile Palette** (si la cerraste: *Window
 |---|---|
 | **Pasto** (verde), **Tierra** (naranja), **Caramelo** (rosa) | Suelo, paredes y plataformas. Los bordes y las esquinas se ponen **solos**: pinta de cualquier forma. |
 | **Pinchos** | Peligro: el jugador muere al tocarlos. |
+| **Frágil** (ladrillo rojo) | Suelo que tiembla y **se cae** poco después de pisarlo, tile a tile. Vuelve a aparecer al rato. Úsalo para puentes que hay que cruzar sin pararse. |
+
+> **Ajustar el tile Frágil:** selecciona `Assets/Platformer/Art/Tiles/Fragil` en Project. **Delay** = segundos que aguanta tras pisarlo; **Respawn Time** = segundos hasta que vuelve (0 = no vuelve nunca). El cambio vale para todos los ladrillos frágiles de todos los niveles.
 
 **Herramientas** (con el ratón sobre la vista Scene):
 
@@ -137,7 +142,46 @@ También están en `Assets/Platformer/Prefabs/`:
 
 ---
 
-## 6. Frutas, banderas y meta
+## 6. Trampas que caen y enemigos que disparan
+
+También en `Assets/Platformer/Prefabs/`:
+
+| Prefab | Qué hace |
+|---|---|
+| **PlataformaQueCae** | Al subirte, sus hélices se paran y poco después **cae** (contigo encima si no saltas). Vuelve a su sitio al rato. |
+| **Estalactita** | Cuelga del techo. Cuando pasas **por debajo**, tiembla y cae. Si te da, mueres. |
+| **EnemigoTirador** | Se queda quieto, te mira y te **dispara bolas de hielo** cuando estás cerca. Se le puede pisar como al Enemigo. |
+| **Recarga** | Flecha que rellena las cargas de **dash** del jugador (ver el apartado 8). |
+
+**PlataformaQueCae:** colócala como la plataforma móvil. En el Inspector:
+
+| Valor | Qué cambia |
+|---|---|
+| **Fall Delay** | Segundos desde que la pisas hasta que cae |
+| **Respawn Time** | Segundos hasta que vuelve a su sitio (0 = no vuelve) |
+
+**Estalactita:** ponla en el tile que está **justo debajo del techo** (con `Ctrl` pulsado se coloca tile a tile). El **rectángulo rojo** de debajo es la zona que la hace caer: llega hasta el suelo.
+
+| Valor | Qué cambia |
+|---|---|
+| **Trigger Width** | Ancho de la zona roja, en tiles |
+| **Warning Time** | Segundos que tiembla antes de caer: el tiempo que tienes para apartarte |
+
+**EnemigoTirador:** pon sus pies sobre el suelo. Al seleccionarlo, el **círculo naranja** muestra hasta dónde ve: solo dispara si estás dentro. Las bolas atraviesan frutas y banderas, pero se rompen contra el terreno: una pared te protege.
+
+| Valor | Qué cambia |
+|---|---|
+| **Fire Interval** | Segundos entre disparos |
+| **Range** | Tamaño del círculo naranja |
+| **Aim At Player** | Desactivado: dispara recto hacia los lados (lo esquivas saltando). Activado: apunta hacia ti, también en diagonal |
+
+Para cambiar la velocidad de las bolas, abre el prefab **Proyectil** y cambia **Speed**.
+
+**✏️ Prueba:** haz un pasillo con techo y tres estalactitas, y pon una fruta justo debajo de la del medio. ¿Te atreves a ir a por ella?
+
+---
+
+## 7. Frutas, banderas y meta
 
 | Prefab | Qué hace |
 |---|---|
@@ -161,7 +205,7 @@ También están en `Assets/Platformer/Prefabs/`:
 
 ---
 
-## 7. Ajusta cómo se mueve el personaje
+## 8. Ajusta cómo se mueve el personaje
 
 Selecciona **Jugador** en la Hierarchy. En el Inspector, en *Player Controller*:
 
@@ -178,9 +222,23 @@ La **línea roja** horizontal es la altura de caída: si el jugador cae por deba
 
 **✏️ Prueba:** pon *Gravity* en 1 y *Jump Force* en 8 y mira el arco amarillo. ¿Cambia la altura del salto? ¿Y la distancia? Dale a Play: ¿cómo se siente?
 
+### El dash
+
+El **dash** es un impulso muy rápido hacia donde mira el personaje (`Shift`), también en el aire. Gasta una **carga**: las cargas se ven como flechas arriba a la izquierda (las gastadas, más claras). Para recuperarlas, toca una **Recarga** (la flecha del suelo) o espera, si lo has configurado. En *Player Controller → Dash*:
+
+| Valor | Qué cambia |
+|---|---|
+| **Dash Charges** | Cuántas cargas tiene. **0 = sin dash** (así empiezan los niveles nuevos). |
+| **Dash Distance** | Cuántos tiles avanza. La **línea celeste** lo muestra en la escena. |
+| **Dash Recharge Time** | Segundos para recuperar una carga sola. 0 = solo se recarga con la **Recarga**. |
+
+**Recarga:** arrástrala desde Prefabs. Si el jugador ya tiene todas las cargas, no se gasta. **Respawn Time** = segundos hasta que vuelve a aparecer (0 = solo sirve una vez).
+
+**✏️ Prueba:** pon *Dash Charges* en 1 y haz un foso que no se pueda saltar sin dash (mira el arco amarillo y la línea celeste). Pon una Recarga antes del foso.
+
 ---
 
-## 8. Límites de la cámara
+## 9. Límites de la cámara
 
 Al principio la cámara sigue al jugador a todas partes, también fuera del nivel: debajo del suelo o más allá de las paredes. Cuando tu nivel esté casi terminado, ponle límites:
 
@@ -195,15 +253,15 @@ La cámara nunca enseña nada fuera del rectángulo. Si el jugador cae por un hu
 
 ---
 
-## 9. Cambia los sonidos
+## 10. Cambia los sonidos
 
-Cada objeto trae su sonido: saltar, morir, pisar a un enemigo, recoger una fruta, el trampolín, la bandera y la meta. Para cambiarlo, selecciona el objeto (o su prefab en `Assets/Platformer/Prefabs/`) y en el Inspector arrastra otro sonido al campo **Sound** (*Jump Sound* y *Death Sound* en el Jugador; *Stomp Sound* en el Enemigo). Hay muchos en `Assets/ThirdParty/Kenney/Audio_DigitalSFX/Audio/` y músicas cortas en `Assets/ThirdParty/Kenney/Audio_MusicJingles/Audio/`. Déjalo vacío para que no suene.
+Cada objeto trae su sonido: saltar, dash, morir, pisar a un enemigo, recoger una fruta, el trampolín, la bandera, la meta, las trampas que caen, el disparo del tirador y la recarga. Para cambiarlo, selecciona el objeto (o su prefab en `Assets/Platformer/Prefabs/`) y en el Inspector arrastra otro sonido al campo **Sound** (*Jump Sound*, *Dash Sound* y *Death Sound* en el Jugador; *Stomp Sound* en el Enemigo; el del tile Frágil, en el propio tile). Hay muchos en `Assets/ThirdParty/Kenney/Audio_DigitalSFX/Audio/` y músicas cortas en `Assets/ThirdParty/Kenney/Audio_MusicJingles/Audio/`. Déjalo vacío para que no suene.
 
 > **Truco:** haz clic en un sonido en la ventana Project y pulsa el botón ▶ de la parte de abajo del Inspector para escucharlo.
 
 ---
 
-## 10. Guarda
+## 11. Guarda
 
 `Ctrl + S`. Guarda a menudo.
 
@@ -219,7 +277,10 @@ Cada objeto trae su sonido: saltar, morir, pisar a un enemigo, recoger una fruta
 6. **La saga:** tres niveles encadenados con *Next Level*, cada uno más difícil que el anterior.
 7. **Doble o nada:** activa *Double Jump* y diseña un pasillo que solo se pueda superar con el doble salto. Usa el arco amarillo para medirlo.
 8. **El largo camino:** un nivel muy largo con tres banderas. Pon la parte más difícil justo después de la última.
-9. **Intercambio:** juega el nivel de un compañero y dile qué parte fue la más difícil.
+9. **Puente roto:** un puente de tiles Frágil sobre un foso con un EnemigoTirador al otro lado. ¡No puedes pararte a esquivar!
+10. **Solo con dash:** *Dash Charges* en 2 y un nivel con huecos que exijan gastar las dos cargas seguidas, con una Recarga en mitad.
+11. **La cueva helada:** un pasillo largo con techo lleno de estalactitas y plataformas que caen.
+12. **Intercambio:** juega el nivel de un compañero y dile qué parte fue la más difícil.
 
 ---
 
@@ -240,4 +301,8 @@ Cada objeto trae su sonido: saltar, morir, pisar a un enemigo, recoger una fruta
 | En el juego exportado el personaje tiembla al correr | Nivel creado con una versión antigua del kit: en *Main Camera → Pixel Perfect Camera*, pon **Grid Snapping** en *None*. |
 | No suena nada | Comprueba que el botón **Mute Audio** (el altavoz de la barra de la vista Game) no está activado. |
 | Al morir no vuelvo a la bandera | Tienes que tocarla primero (se despliega). Al darle a Play de nuevo, el nivel siempre empieza desde el principio. |
+| El dash no hace nada | *Dash Charges* del Jugador está en 0, o ya gastaste las cargas (mira las flechas de arriba a la izquierda). |
+| La estalactita no cae | Tienes que pasar por el rectángulo rojo de debajo. Si no lo ves, colócala justo debajo del techo, con suelo debajo. |
+| El tirador no dispara | Estás fuera de su círculo naranja (*Range*). |
+| Los ladrillos frágiles no se caen | Píntalos con el tile **Frágil** en el Tilemap **Terreno** y usa el prefab **Jugador** (lleva el componente *Tile Crumbler*). |
 | Cambié algo y se perdió | Lo cambiaste en Play. Sal de Play y vuelve a cambiarlo. |

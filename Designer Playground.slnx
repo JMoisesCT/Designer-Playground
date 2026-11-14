@@ -1,6 +1,6 @@
 ﻿<Solution>
-  <Project Path="Shmup.csproj" />
   <Project Path="Platformer.csproj" />
+  <Project Path="Shmup.csproj" />
   <Project Path="TopDown.Editor.csproj" />
   <Project Path="TopDown.csproj" />
   <Project Path="Shmup.Editor.csproj" />

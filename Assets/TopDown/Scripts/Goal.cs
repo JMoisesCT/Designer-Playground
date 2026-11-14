@@ -16,6 +16,12 @@ namespace TopDown
         [Tooltip("Segundos que se ve el mensaje antes de cambiar de nivel.")]
         [SerializeField, Range(0f, 5f)] private float _delay = 2f;
 
+        [Tooltip("Activado: el cofre no se abre hasta recoger todas las monedas del nivel.")]
+        [SerializeField] private bool _requireAllCoins;
+
+        [Tooltip("Mensaje si llega sin todas las monedas.")]
+        [SerializeField] private string _lockedMessage = "Te faltan monedas";
+
         [Tooltip("Música al llegar. Déjalo vacío para que no suene.")]
         [SerializeField] private AudioClip _sound;
 
@@ -33,12 +39,17 @@ namespace TopDown
             PlayerHealth player = collision.collider.GetComponentInParent<PlayerHealth>();
             if (player == null || player.IsDead) return;
 
+            LevelHud hud = FindFirstObjectByType<LevelHud>();
+            if (_requireAllCoins && hud != null && !hud.AllCoinsCollected)
+            {
+                hud.ShowMessage(_lockedMessage, 2f);
+                return;
+            }
+
             _reached = true;
             player.GetComponent<PlayerController>().Stop();
             _sprite.sprite = _openSprite;
             Sound.Play(_sound);
-
-            LevelHud hud = FindFirstObjectByType<LevelHud>();
             if (hud != null) hud.ShowMessage(_message);
 
             StartCoroutine(LoadNextLevel());

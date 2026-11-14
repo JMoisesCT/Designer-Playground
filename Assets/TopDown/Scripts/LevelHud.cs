@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace TopDown
 {
-    // Pantalla del nivel: corazones y contador de monedas (arriba a la izquierda) y mensaje central.
+    // Pantalla del nivel: corazones, monedas, llaves y pulso EMP (arriba a la izquierda) y mensaje central.
     public class LevelHud : MonoBehaviour
     {
         [Header("Referencias")]
@@ -15,10 +15,17 @@ namespace TopDown
         [SerializeField] private GameObject _coinCounter;
         [SerializeField] private Text _coinText;
         [SerializeField] private Text _messageText;
+        [SerializeField] private GameObject _keyCounter;
+        [SerializeField] private Text _keyText;
+        [SerializeField] private GameObject _empIcon;
 
         private readonly List<Image> _hearts = new();
+        private PlayerItems _items;
         private int _collected;
         private int _total;
+        private float _hideMessageTime = float.MaxValue;
+
+        public bool AllCoinsCollected => _collected >= _total;
 
         private void Start()
         {
@@ -26,7 +33,19 @@ namespace TopDown
             _total = FindObjectsByType<Coin>(FindObjectsSortMode.None).Length;
             _coinCounter.SetActive(_total > 0);
             _messageText.text = "";
+            _items = FindFirstObjectByType<PlayerItems>();
             RefreshCoins();
+        }
+
+        // Las llaves y el EMP solo se ven mientras el jugador los lleva.
+        private void Update()
+        {
+            int keys = _items != null ? _items.Keys : 0;
+            _keyCounter.SetActive(keys > 0);
+            _keyText.text = $"x{keys}";
+            _empIcon.SetActive(_items != null && _items.HasEmp);
+
+            if (Time.time >= _hideMessageTime) ShowMessage("");
         }
 
         public void ShowHealth(int health, int maxHealth)
@@ -50,9 +69,11 @@ namespace TopDown
             RefreshCoins();
         }
 
-        public void ShowMessage(string message)
+        // Mensaje en el centro. Con duración, se borra solo al cabo de esos segundos.
+        public void ShowMessage(string message, float duration = 0f)
         {
             _messageText.text = message;
+            _hideMessageTime = duration > 0f ? Time.time + duration : float.MaxValue;
         }
 
         private void RefreshCoins()
@@ -62,8 +83,8 @@ namespace TopDown
 
         private void OnValidate()
         {
-            if (_heart == null || _fullHeart == null || _emptyHeart == null ||
-                _coinCounter == null || _coinText == null || _messageText == null)
+            if (_heart == null || _fullHeart == null || _emptyHeart == null || _coinCounter == null || _coinText == null ||
+                _messageText == null || _keyCounter == null || _keyText == null || _empIcon == null)
                 Debug.LogWarning($"[{name}] {nameof(LevelHud)}: faltan referencias.", this);
         }
     }

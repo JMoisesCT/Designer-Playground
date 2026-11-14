@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 5772553445711657373}
   - component: {fileID: 5499230147036330723}
   - component: {fileID: 991897648930879708}
+  - component: {fileID: 7366036407471243062}
   m_Layer: 8
   m_Name: Jugador
   m_TagString: Player
@@ -207,12 +208,17 @@ MonoBehaviour:
   _jumpForce: 16
   _gravity: 4
   _doubleJump: 0
+  _dashCharges: 0
+  _dashDistance: 4
+  _dashRechargeTime: 0
   _jumpSound: {fileID: 8300000, guid: f1531cacf2e266f4794561b862426ed0, type: 3}
+  _dashSound: {fileID: 8300000, guid: 580ab2373df29ba4fb5d55430b4c2e8e, type: 3}
   _body: {fileID: 6610086532815479501}
   _sprite: {fileID: 5406626395763575591}
   _animator: {fileID: 7027667089438111454}
   _moveAction: {fileID: -1680190386980627800, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _jumpAction: {fileID: -2099379676528639254, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  _dashAction: {fileID: -7471211009204490832, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   _groundLayers:
     serializedVersion: 2
     m_Bits: 64
@@ -236,3 +242,15 @@ MonoBehaviour:
   _body: {fileID: 6610086532815479501}
   _collider: {fileID: 5772553445711657373}
   _animator: {fileID: 7027667089438111454}
+--- !u!114 &7366036407471243062
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5886804741097496239}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfc20bd1685b26948bb0857383cfde03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Platformer::Platformer.TileCrumbler

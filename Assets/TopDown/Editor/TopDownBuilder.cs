@@ -43,6 +43,12 @@ namespace TopDown.Editor
         private const string CoinSheet = Art + "/Items/Treasure/Coin2.png";
         private const string ChestSheet = Art + "/Items/Treasure/BigTreasureChest.png";
         private const string HeartSheet = Art + "/Ui/Receptacle/Heart.png";
+        private const string ShooterSheet = Art + "/Actor/Monster/Skull/SpriteSheet.png";
+        private const string FireballSheet = Art + "/FX/Projectile/Fireball.png";
+        private const string KeySheet = Art + "/Items/Treasure/GoldKey.png";
+        private const string EmpSheet = Art + "/Items/Scroll/ScrollThunder.png";
+        private const string CrateSheet = Art + "/Items/Object/CrateEmpty.png";
+        private const string PortalSheet = Art + "/FX/Magic/Circle/SpriteSheetSpark.png";
         private const string MusicFolder = Art + "/Audio/Musics";
         private const string InputActionsPath = "Assets/Settings/InputSystem_Actions.inputactions";
 
@@ -54,6 +60,15 @@ namespace TopDown.Editor
         private const string EnemyPrefabPath = PrefabsFolder + "/Enemigo.prefab";
         private const string ChaserPrefabPath = PrefabsFolder + "/Perseguidor.prefab";
         private const string SpikeTrapPrefabPath = PrefabsFolder + "/TrampaPinchos.prefab";
+        private const string ProjectilePrefabPath = PrefabsFolder + "/Proyectil.prefab";
+        private const string ShooterPrefabPath = PrefabsFolder + "/Tirador.prefab";
+        private const string SwitchPrefabPath = PrefabsFolder + "/Interruptor.prefab";
+        private const string BlockPrefabPath = PrefabsFolder + "/Bloque.prefab";
+        private const string DoorPrefabPath = PrefabsFolder + "/Puerta.prefab";
+        private const string KeyPrefabPath = PrefabsFolder + "/Llave.prefab";
+        private const string EmpPrefabPath = PrefabsFolder + "/PulsoEMP.prefab";
+        private const string CratePrefabPath = PrefabsFolder + "/Caja.prefab";
+        private const string TeleporterPrefabPath = PrefabsFolder + "/Teletransporte.prefab";
 
         // Sonidos y música de Ninja Adventure (el alumno puede cambiarlos en el Inspector).
         private const string Sfx = Art + "/Audio/Sounds";
@@ -64,6 +79,15 @@ namespace TopDown.Editor
         private const string AlertSound = Sfx + "/Alert/Alert.wav";
         private const string GoalSound = Art + "/Audio/Jingles/Success1.wav";
         private const string MusicPath = MusicFolder + "/1 - Adventure Begin.ogg";
+        private const string ShotSound = Sfx + "/Elemental/Fireball.wav";
+        private const string SwitchSound = Sfx + "/Hit & Impact/Impact.wav";
+        private const string KeySound = Sfx + "/Bonus/Gold1.wav";
+        private const string DoorSound = Sfx + "/Menu/Accept.wav";
+        private const string LockedSound = Sfx + "/Menu/Cancel.wav";
+        private const string EmpPickupSound = Sfx + "/Bonus/PowerUp1.wav";
+        private const string EmpSound = Sfx + "/Magic & Skill/Spirit.wav";
+        private const string TeleportSound = Sfx + "/Magic & Skill/Magic1.wav";
+        private static readonly Color PortalColor = new(0.85f, 0.55f, 1f);
 
         private const string FloorTilemapName = "Suelo";
         private const string DecorTilemapName = "Decorado";
@@ -84,6 +108,12 @@ namespace TopDown.Editor
             (CoinSheet, 10, 10),
             (ChestSheet, 16, 14),
             (HeartSheet, 16, 16),
+            (ShooterSheet, 16, 16),
+            (FireballSheet, 16, 16),
+            (KeySheet, 12, 8),
+            (EmpSheet, 16, 16),
+            (CrateSheet, 16, 15),
+            (PortalSheet, 32, 32),
         };
 
         // Piezas de TilesetNature (columna, fila) que van en el Tilemap "Decorado".
@@ -109,6 +139,13 @@ namespace TopDown.Editor
         private const string GrassTileName = "Pasto";
         private const string PathTileName = "Camino";
         private const string SpikesTileName = "Pinchos";
+        private const string IceTileName = "Hielo";
+        private const string SandTileName = "Arena";
+
+        // Primera fila de cada juego de bordes de TilesetFloor (todos tienen la misma disposición que el camino).
+        private const int PathTop = 7;
+        private const int IceTop = 21;
+        private const int SandTop = 0;
 
         [MenuItem("TopDown/Crear nivel nuevo", priority = 0)]
         private static void CreateLevelFromMenu()
@@ -241,6 +278,10 @@ namespace TopDown.Editor
 
             BuildController("Moneda", BuildClip("Moneda", "Spin", 8, true, Frames(CoinSheet, 0, 1, 2, 3)));
 
+            BuildController("Tirador", BuildWalkClips("Tirador", ShooterSheet, ShooterSheet).ToArray());
+            BuildController("BolaDeFuego", BuildClip("BolaDeFuego", "Fly", 10, true, Frames(FireballSheet, 0, 1, 2, 3)));
+            BuildController("Teletransporte", BuildClip("Teletransporte", "Idle", 6, true, Frames(PortalSheet, 0, 1, 2, 3, 4, 5)));
+
             AssetDatabase.SaveAssets();
         }
 
@@ -322,7 +363,15 @@ namespace TopDown.Editor
         {
             EnsureFolder(TilesFolder);
             BuildGrassTile();
-            BuildPathTile();
+            BuildEdgedTile(GetOrCreateAsset<RuleTile>($"{TilesFolder}/{PathTileName}.asset"), PathTop);
+
+            // Suelos especiales: hielo (resbala) y arena (lenta).
+            var ice = GetOrCreateAsset<FloorTile>($"{TilesFolder}/{IceTileName}.asset");
+            BuildEdgedTile(ice, IceTop);
+            SetValues(ice, ("_slippery", true), ("_speedMultiplier", 1f));
+            var sand = GetOrCreateAsset<FloorTile>($"{TilesFolder}/{SandTileName}.asset");
+            BuildEdgedTile(sand, SandTop);
+            SetValues(sand, ("_slippery", false), ("_speedMultiplier", 0.5f));
 
             var spikes = GetOrCreateAsset<HazardTile>($"{TilesFolder}/{SpikesTileName}.asset");
             spikes.sprite = Piece(DungeonSheet, 4, 1);
@@ -374,16 +423,17 @@ namespace TopDown.Editor
             EditorUtility.SetDirty(tile);
         }
 
-        // Camino de tierra sobre el pasto: elige borde, esquina, tira o centro según los caminos vecinos.
-        private static void BuildPathTile()
+        // Camino de tierra (o hielo, o arena) sobre el pasto: elige borde, esquina, tira o centro según los vecinos.
+        // "top" es la primera fila del juego de piezas en TilesetFloor; las filas de abajo se cuentan desde ella.
+        private static void BuildEdgedTile(RuleTile tile, int top)
         {
             const int This = RuleTile.TilingRuleOutput.Neighbor.This;
             const int Not = RuleTile.TilingRuleOutput.Neighbor.NotThis;
 
-            Sprite Floor(int column, int row) => Piece(FloorSheet, column, row);
+            Sprite Floor(int column, int row) => Piece(FloorSheet, column, row - PathTop + top);
 
-            var tile = GetOrCreateAsset<RuleTile>($"{TilesFolder}/{PathTileName}.asset");
-            tile.m_DefaultSprite = Floor(3, 10); // camino de un solo tile
+            // Tile suelto. Al juego del hielo le falta: usa el centro.
+            tile.m_DefaultSprite = top == IceTop ? Floor(1, 8) : Floor(3, 10);
             tile.m_DefaultColliderType = Tile.ColliderType.None;
             tile.m_TilingRules = new List<RuleTile.TilingRule>
             {
@@ -447,6 +497,8 @@ namespace TopDown.Editor
             tilemap.SetTile(new Vector3Int(0, 0, 0), LoadTile(GrassTileName));
             tilemap.SetTile(new Vector3Int(1, 0, 0), LoadTile(PathTileName));
             tilemap.SetTile(new Vector3Int(2, 0, 0), LoadTile(SpikesTileName));
+            tilemap.SetTile(new Vector3Int(3, 0, 0), LoadTile(IceTileName));
+            tilemap.SetTile(new Vector3Int(4, 0, 0), LoadTile(SandTileName));
 
             int bigX = 0, smallX = 0, flatX = 0;
             foreach (var (tileName, _, _, size, solid) in DecorTiles)
@@ -487,6 +539,14 @@ namespace TopDown.Editor
                 BuildEnemyPrefab();
                 BuildChaserPrefab();
                 BuildSpikeTrapPrefab();
+                BuildProjectilePrefab();
+                BuildShooterPrefab();
+                BuildSwitchPrefab();
+                BuildBlockPrefabs();
+                BuildPickupPrefab("Llave", KeyPrefabPath, Piece(KeySheet, 0, 0), ItemPickup.Kind.Key, KeySound);
+                BuildPickupPrefab("PulsoEMP", EmpPrefabPath, Piece(EmpSheet, 0, 0), ItemPickup.Kind.Emp, EmpPickupSound);
+                BuildCratePrefab();
+                BuildTeleporterPrefab();
             }
             finally
             {
@@ -529,6 +589,8 @@ namespace TopDown.Editor
             var health = root.AddComponent<PlayerHealth>();
             SetFields(health, ("_controller", controller), ("_collider", box), ("_sprite", sprite), ("_animator", animator),
                 ("_hurtSound", LoadSound(HurtSound)), ("_deathSound", LoadSound(DeathSound)));
+
+            SetFields(root.AddComponent<PlayerItems>(), ("_useAction", FindAction(actions, "Interact")), ("_empSound", LoadSound(EmpSound)));
 
             SavePrefab(root, PlayerPrefabPath);
         }
@@ -616,6 +678,33 @@ namespace TopDown.Editor
             coinText.rectTransform.offsetMin = new Vector2(14f, 0f);
             coinText.rectTransform.offsetMax = Vector2.zero;
 
+            // Fila de objetos bajo las monedas: llaves (con contador) y pulso EMP. Solo se ven mientras se llevan.
+            RectTransform items = AddRect(root.transform, "Objetos", new Vector2(4f, -36f), new Vector2(80f, 16f));
+            var itemsLayout = items.gameObject.AddComponent<HorizontalLayoutGroup>();
+            itemsLayout.spacing = 4f;
+            itemsLayout.childAlignment = TextAnchor.MiddleLeft;
+            itemsLayout.childControlWidth = itemsLayout.childControlHeight = false;
+            itemsLayout.childForceExpandWidth = itemsLayout.childForceExpandHeight = false;
+
+            RectTransform keys = AddRect(items, "Llaves", Vector2.zero, new Vector2(30f, 16f));
+            var keyIcon = new GameObject("Icono", typeof(RectTransform)).AddComponent<Image>();
+            keyIcon.rectTransform.SetParent(keys, false);
+            keyIcon.rectTransform.anchorMin = keyIcon.rectTransform.anchorMax = keyIcon.rectTransform.pivot = new Vector2(0f, 0.5f);
+            keyIcon.rectTransform.sizeDelta = new Vector2(12f, 8f);
+            keyIcon.sprite = Piece(KeySheet, 0, 0);
+            keyIcon.raycastTarget = false;
+            Text keyText = AddText(keys, "Contador", 10, TextAnchor.MiddleLeft);
+            keyText.rectTransform.anchorMin = Vector2.zero;
+            keyText.rectTransform.anchorMax = Vector2.one;
+            keyText.rectTransform.offsetMin = new Vector2(14f, 0f);
+            keyText.rectTransform.offsetMax = Vector2.zero;
+
+            var empIcon = new GameObject("PulsoEMP", typeof(RectTransform)).AddComponent<Image>();
+            empIcon.rectTransform.SetParent(items, false);
+            empIcon.rectTransform.sizeDelta = new Vector2(16f, 16f);
+            empIcon.sprite = Piece(EmpSheet, 0, 0);
+            empIcon.raycastTarget = false;
+
             Text messageText = AddText(root.transform, "Mensaje", 20, TextAnchor.MiddleCenter);
             messageText.rectTransform.anchorMin = Vector2.zero;
             messageText.rectTransform.anchorMax = Vector2.one;
@@ -623,7 +712,8 @@ namespace TopDown.Editor
 
             SetFields(root.AddComponent<LevelHud>(),
                 ("_heart", heart), ("_fullHeart", heartFrames[^1]), ("_emptyHeart", heartFrames[0]),
-                ("_coinCounter", counter.gameObject), ("_coinText", coinText), ("_messageText", messageText));
+                ("_coinCounter", counter.gameObject), ("_coinText", coinText), ("_messageText", messageText),
+                ("_keyCounter", keys.gameObject), ("_keyText", keyText), ("_empIcon", empIcon.gameObject));
             SavePrefab(root, HudPrefabPath);
         }
 
@@ -695,6 +785,132 @@ namespace TopDown.Editor
             SetFields(root.AddComponent<TimedHazard>(), ("_collider", box), ("_sprite", sprite),
                 ("_onSprite", Piece(DungeonSheet, 4, 1)), ("_offSprite", Piece(DungeonSheet, 5, 1)));
             SavePrefab(root, SpikeTrapPrefabPath);
+        }
+
+        // Bola de fuego: el dibujo vuela hacia arriba a la derecha, así que va en un hijo girado -45°.
+        private static void BuildProjectilePrefab()
+        {
+            var root = new GameObject("Proyectil") { layer = LayerMask.NameToLayer("Hazard") };
+            var art = new GameObject("Dibujo");
+            art.transform.SetParent(root.transform, false);
+            art.transform.localRotation = Quaternion.Euler(0f, 0f, -45f);
+            AddSprite(art, "BolaDeFuego", "Fly", "Player", 20);
+            AddAnimator(art, "BolaDeFuego");
+
+            // Dinámico sin gravedad: así su trigger detecta también los árboles y rocas (estáticos).
+            var body = root.AddComponent<Rigidbody2D>();
+            body.gravityScale = 0f;
+            body.interpolation = RigidbodyInterpolation2D.Interpolate;
+
+            var circle = root.AddComponent<CircleCollider2D>();
+            circle.isTrigger = true;
+            circle.radius = 0.25f;
+
+            SetFields(root.AddComponent<Projectile>(), ("_body", body));
+            SavePrefab(root, ProjectilePrefabPath);
+        }
+
+        // Calavera quieta que dispara bolas de fuego al jugador. Tiene ruta (vacía): con "Añadir punto" patrulla.
+        private static void BuildShooterPrefab()
+        {
+            GameObject root = NewEnemy("Tirador", out Rigidbody2D body, out Animator animator);
+            body.bodyType = RigidbodyType2D.Kinematic;
+
+            SetFields(root.AddComponent<PathMover>(), ("_body", body));
+            SetValues(root.GetComponent<PathMover>(), ("_points", new Vector2[0]));
+            SetFields(root.AddComponent<WalkAnimator>(), ("_body", body), ("_animator", animator));
+            SetFields(root.AddComponent<EnemyShooter>(),
+                ("_projectilePrefab", AssetDatabase.LoadAssetAtPath<Projectile>(ProjectilePrefabPath)), ("_shotSound", LoadSound(ShotSound)));
+            SavePrefab(root, ShooterPrefabPath);
+        }
+
+        // Botón rojo en el suelo (TilesetDungeon): (0,1) sin pulsar, (1,1) pulsado.
+        private static void BuildSwitchPrefab()
+        {
+            var root = new GameObject("Interruptor");
+            var sprite = root.AddComponent<SpriteRenderer>();
+            sprite.sprite = Piece(DungeonSheet, 0, 1);
+            sprite.sortingLayerName = "Traps";
+
+            SetFields(root.AddComponent<Switch>(), ("_sprite", sprite),
+                ("_upSprite", Piece(DungeonSheet, 0, 1)), ("_downSprite", Piece(DungeonSheet, 1, 1)), ("_sound", LoadSound(SwitchSound)));
+            SavePrefab(root, SwitchPrefabPath);
+        }
+
+        // Bloque azul (lo quita un interruptor) y puerta con cerradura (la abre una llave). Sólidos de 1 tile.
+        private static void BuildBlockPrefabs()
+        {
+            SavePrefab(NewSolidTile("Bloque", Piece(DungeonSheet, 0, 2)), BlockPrefabPath);
+
+            GameObject door = NewSolidTile("Puerta", Piece(DungeonSheet, 0, 0));
+            SetFields(door.AddComponent<LockedDoor>(), ("_openSound", LoadSound(DoorSound)), ("_lockedSound", LoadSound(LockedSound)));
+            SavePrefab(door, DoorPrefabPath);
+        }
+
+        private static GameObject NewSolidTile(string objectName, Sprite art)
+        {
+            var root = new GameObject(objectName) { layer = LayerMask.NameToLayer("Ground") };
+            var sprite = root.AddComponent<SpriteRenderer>();
+            sprite.sprite = art;
+            sprite.sortingLayerName = "Traps";
+            root.AddComponent<BoxCollider2D>().size = Vector2.one;
+            return root;
+        }
+
+        private static void BuildPickupPrefab(string objectName, string path, Sprite art, ItemPickup.Kind kind, string sound)
+        {
+            var root = new GameObject(objectName);
+            var sprite = root.AddComponent<SpriteRenderer>();
+            sprite.sprite = art;
+            sprite.sortingLayerName = "Traps";
+            sprite.sortingOrder = 5;
+
+            var circle = root.AddComponent<CircleCollider2D>();
+            circle.isTrigger = true;
+            circle.radius = 0.4f;
+
+            var pickup = root.AddComponent<ItemPickup>();
+            SetFields(pickup, ("_sound", LoadSound(sound)));
+            var serializedPickup = new SerializedObject(pickup);
+            serializedPickup.FindProperty("_kind").enumValueIndex = (int)kind;
+            serializedPickup.ApplyModifiedPropertiesWithoutUndo();
+            SavePrefab(root, path);
+        }
+
+        // Caja que el jugador empuja. Frena enseguida al dejar de empujarla y pulsa los interruptores.
+        private static void BuildCratePrefab()
+        {
+            var root = new GameObject("Caja");
+            var sprite = root.AddComponent<SpriteRenderer>();
+            sprite.sprite = Piece(CrateSheet, 0, 0);
+            sprite.sortingLayerName = "Player";
+
+            var body = root.AddComponent<Rigidbody2D>();
+            body.gravityScale = 0f;
+            body.freezeRotation = true;
+            body.linearDamping = 10f;
+            body.interpolation = RigidbodyInterpolation2D.Interpolate;
+
+            var box = root.AddComponent<BoxCollider2D>();
+            box.size = new Vector2(0.875f, 0.875f);
+            box.sharedMaterial = AssetDatabase.LoadAssetAtPath<PhysicsMaterial2D>(PhysicsMaterialPath);
+            SavePrefab(root, CratePrefabPath);
+        }
+
+        // Círculo mágico animado (2×2 tiles) teñido de morado. Solo el centro lo activa.
+        private static void BuildTeleporterPrefab()
+        {
+            var root = new GameObject("Teletransporte");
+            SpriteRenderer sprite = AddSprite(root, "Teletransporte", "Idle", "Traps", 0);
+            sprite.color = PortalColor;
+            AddAnimator(root, "Teletransporte");
+
+            var circle = root.AddComponent<CircleCollider2D>();
+            circle.isTrigger = true;
+            circle.radius = 0.4f;
+
+            SetFields(root.AddComponent<Teleporter>(), ("_sound", LoadSound(TeleportSound)));
+            SavePrefab(root, TeleporterPrefabPath);
         }
 
         // Rectángulo anclado arriba a la izquierda.
@@ -785,7 +1001,7 @@ namespace TopDown.Editor
                 var serializedCamera = new SerializedObject(cameraFollow);
                 serializedCamera.FindProperty("_useBounds").boolValue = true;
                 serializedCamera.FindProperty("_boundsMin").vector2Value = Vector2.zero;
-                serializedCamera.FindProperty("_boundsMax").vector2Value = new Vector2(48f, 30f);
+                serializedCamera.FindProperty("_boundsMax").vector2Value = new Vector2(80f, 30f);
                 serializedCamera.ApplyModifiedPropertiesWithoutUndo();
             }
             PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(HudPrefabPath));
@@ -815,18 +1031,48 @@ namespace TopDown.Editor
             return new Vector2(3.5f, 8.5f);
         }
 
-        // Nivel de ejemplo (48×30 tiles): camino con monedas, un claro escondido en el bosque y un pasillo de pinchos en zigzag.
+        // Nivel de ejemplo (80×30 tiles). Zona 1 (x < 46): camino con monedas, un claro escondido en el bosque con la llave
+        // y un pasillo de pinchos en zigzag hasta una puerta. Zona 2 (x > 47): arena con slimes y el pulso EMP,
+        // un teletransporte que cruza una muralla de árboles, hielo con pinchos y un tirador, y una caja que hay que
+        // empujar sobre un interruptor para quitar los bloques que encierran el cofre.
         private static Vector2 PaintExampleLevel(Tilemap floor, Tilemap decor)
         {
             TileBase path = LoadTile(PathTileName);
             TileBase spikes = LoadTile(SpikesTileName);
 
-            Fill(floor, LoadTile(GrassTileName), 0, 47, 0, 29);
+            Fill(floor, LoadTile(GrassTileName), 0, 79, 0, 29);
             Fill(floor, path, 2, 21, 4, 5);    // salida hacia la derecha
             Fill(floor, path, 20, 21, 4, 21);  // sube
             Fill(floor, path, 22, 25, 20, 21); // hasta el pasillo de pinchos
-            Fill(floor, path, 36, 45, 20, 21); // del pasillo al cofre
-            TreeBorder(decor, 48, 30);
+            Fill(floor, path, 36, 49, 20, 21); // del pasillo a la puerta de la zona 2
+            TreeBorder(decor, 80, 30);
+
+            // Muralla entre las dos zonas, con un hueco de 1 tile en y = 20 que cierra la Puerta.
+            for (int y = 2; y <= 26; y += 2)
+            {
+                if (y != 20) Paint2x2(decor, "Arbol", 46, y);
+            }
+            decor.SetTile(new Vector3Int(46, 21, 0), LoadTile("RocaGrisPequena"));
+            decor.SetTile(new Vector3Int(47, 21, 0), LoadTile("RocaGrisPequena"));
+
+            // Zona 2, izquierda: arena (lenta) con slimes. Muralla sin huecos en x = 60..61: solo se cruza con el teletransporte.
+            Fill(floor, LoadTile(SandTileName), 50, 58, 3, 15);
+            for (int y = 2; y <= 26; y += 2)
+            {
+                Paint2x2(decor, "Pino", 60, y);
+            }
+
+            // Zona 2, derecha: pista de hielo con pinchos.
+            Fill(floor, LoadTile(IceTileName), 63, 76, 3, 12);
+            Fill(floor, spikes, 67, 68, 7, 7);
+            Fill(floor, spikes, 71, 71, 4, 6);
+            Fill(floor, spikes, 73, 74, 10, 10);
+
+            // Recinto del cofre: árboles en y = 22..23 salvo el hueco x = 72..73, que tapan dos Bloques.
+            for (int x = 62; x <= 76; x += 2)
+            {
+                if (x != 72) Paint2x2(decor, "Arbol", x, 22);
+            }
 
             // Bosque con un claro escondido; se entra por un hueco del lado derecho.
             for (int x = 4; x <= 16; x += 2)
@@ -895,7 +1141,39 @@ namespace TopDown.Editor
             }
 
             Spawn(CheckpointPrefabPath, new Vector2(22.5f, 19f)); // antes del pasillo de pinchos
-            Spawn(GoalPrefabPath, new Vector2(44.5f, 22.5f));
+
+            // Zona 2. La llave de la puerta está en el claro escondido del bosque.
+            Spawn(KeyPrefabPath, new Vector2(10f, 14f));
+            Spawn(DoorPrefabPath, new Vector2(46.5f, 20.5f));
+            Spawn(CheckpointPrefabPath, new Vector2(49.5f, 18.5f));
+            Spawn(EmpPrefabPath, new Vector2(50.5f, 24.5f));
+            foreach (var (x, y, dy) in new[] { (52.5f, 4.5f, 10f), (54.5f, 14.5f, -10f), (56.5f, 4.5f, 10f) })
+            {
+                GameObject slime = Spawn(EnemyPrefabPath, new Vector2(x, y));
+                SetValues(slime.GetComponent<PathMover>(), ("_points", new[] { new Vector2(0f, dy) }), ("_speed", 3f), ("_waitTime", 0f));
+            }
+            GameObject teleporter = Spawn(TeleporterPrefabPath, new Vector2(54.5f, 2.5f));
+            SetValues(teleporter.GetComponent<Teleporter>(), ("_exitOffset", new Vector2(10f, 2f)));
+
+            Spawn(ShooterPrefabPath, new Vector2(76.5f, 14.5f));
+            Spawn(CoinPrefabPath, new Vector2(69.5f, 9.5f));   // en mitad del hielo
+            Spawn(CoinPrefabPath, new Vector2(57.5f, 9.5f));   // entre los slimes
+
+            Spawn(CratePrefabPath, new Vector2(65.5f, 19.5f));  // en línea con el interruptor: se empuja 4 tiles a la derecha
+            GameObject switchObject = Spawn(SwitchPrefabPath, new Vector2(69.5f, 19.5f));
+            GameObject blockA = Spawn(BlockPrefabPath, new Vector2(72.5f, 22.5f));
+            GameObject blockB = Spawn(BlockPrefabPath, new Vector2(73.5f, 22.5f));
+            GameObject blockC = Spawn(BlockPrefabPath, new Vector2(72.5f, 23.5f));
+            GameObject blockD = Spawn(BlockPrefabPath, new Vector2(73.5f, 23.5f));
+            var serializedSwitch = new SerializedObject(switchObject.GetComponent<Switch>());
+            SerializedProperty targets = serializedSwitch.FindProperty("_targets");
+            GameObject[] blocks = { blockA, blockB, blockC, blockD };
+            targets.arraySize = blocks.Length;
+            for (int i = 0; i < blocks.Length; i++) targets.GetArrayElementAtIndex(i).objectReferenceValue = blocks[i];
+            serializedSwitch.FindProperty("_holdToKeep").boolValue = true; // la caja tiene que quedarse encima
+            serializedSwitch.ApplyModifiedPropertiesWithoutUndo();
+
+            Spawn(GoalPrefabPath, new Vector2(74.5f, 26.5f));
 
             // Slime que cruza el camino de subida de un lado a otro.
             GameObject enemy = Spawn(EnemyPrefabPath, new Vector2(18.5f, 8.5f));
@@ -922,6 +1200,8 @@ namespace TopDown.Editor
                 switch (value)
                 {
                     case float number: property.floatValue = number; break;
+                    case bool flag: property.boolValue = flag; break;
+                    case Vector2 point: property.vector2Value = point; break;
                     case Vector2[] points:
                         property.arraySize = points.Length;
                         for (int i = 0; i < points.Length; i++) property.GetArrayElementAtIndex(i).vector2Value = points[i];

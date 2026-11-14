@@ -154,6 +154,8 @@ MonoBehaviour:
   _nextLevel: 
   _message: "\xA1Nivel completado!"
   _delay: 2
+  _requireAllCoins: 0
+  _lockedMessage: Te faltan monedas
   _sound: {fileID: 8300000, guid: a03e0b6fac682024cbffd078203a85f9, type: 3}
   _sprite: {fileID: 4000651721799526}
   _openSprite: {fileID: -1202317231, guid: 680434b7095dd314aa3f5f1d0281aa0e, type: 3}

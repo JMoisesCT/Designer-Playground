@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Tilemaps;
 
 namespace TopDown
 {
@@ -20,9 +21,19 @@ namespace TopDown
         [SerializeField] private Animator _animator;
         [SerializeField] private InputActionReference _moveAction;
 
+        private const float SlipperyAcceleration = 6f; // en hielo, tiles/s que gana o pierde por segundo
+
         private Vector2 _moveInput;
         private int _direction; // 0 abajo, 1 arriba, 2 izquierda, 3 derecha
         private int _currentState;
+        private Tilemap[] _tilemaps;
+        private Collider2D _feet;
+
+        private void Start()
+        {
+            _tilemaps = FindObjectsByType<Tilemap>(FindObjectsSortMode.None);
+            _feet = GetComponent<Collider2D>();
+        }
 
         private void OnEnable()
         {
@@ -50,7 +61,24 @@ namespace TopDown
 
         private void FixedUpdate()
         {
-            _body.linearVelocity = _moveInput * _moveSpeed;
+            // Los suelos especiales (FloorTile) cambian la velocidad o hacen resbalar.
+            FloorTile floor = GetFloorTile();
+            Vector2 target = _moveInput * _moveSpeed * (floor != null ? floor.SpeedMultiplier : 1f);
+            if (floor != null && floor.Slippery)
+                _body.linearVelocity = Vector2.MoveTowards(_body.linearVelocity, target, SlipperyAcceleration * Time.fixedDeltaTime);
+            else
+                _body.linearVelocity = target;
+        }
+
+        private FloorTile GetFloorTile()
+        {
+            if (_tilemaps == null || _feet == null) return null;
+            Vector2 feet = _feet.bounds.center;
+            foreach (Tilemap tilemap in _tilemaps)
+            {
+                if (tilemap != null && tilemap.GetTile(tilemap.WorldToCell(feet)) is FloorTile floor) return floor;
+            }
+            return null;
         }
 
         // Deja de responder a los controles y se queda quieto (por ejemplo, al llegar a la meta).
